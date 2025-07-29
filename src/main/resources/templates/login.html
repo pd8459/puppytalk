@@ -55,20 +55,17 @@
             });
 
             if (response.ok) {
-                // 1. 응답 헤더에서 'Authorization' 토큰을 가져옵니다.
                 const token = response.headers.get('Authorization');
 
-                // 2. 토큰이 존재하는지 확인합니다.
                 if (token) {
-                    // 3. localStorage에 토큰을 저장합니다.
+
                     localStorage.setItem('jwt', token);
 
                     messageDiv.textContent = '로그인에 성공했습니다! 잠시 후 이동합니다.';
                     messageDiv.className = 'success';
 
-                    // 4. 1초 후에 메인 페이지나 다른 페이지로 이동시킵니다.
                     setTimeout(() => {
-                        window.location.href = '/main.html'; // 이동할 페이지 경로
+                        window.location.href = '/main'
                     }, 1000);
 
                 } else {
