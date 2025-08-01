@@ -51,7 +51,7 @@
 
                 postCard.innerHTML = `
                         <div class="card-body">
-                            <h5 class="card-title">${post.title}</h5>
+                            <h5 class="card-title"><a href="/post-detail?id=${post.id}" class="text-decoration-none text-dark">${post.title}</h5>
                             <p class="card-subtitle text-muted">
                                 작성자: ${post.authorNickname} | 작성일: ${formattedDate}
                             </p>

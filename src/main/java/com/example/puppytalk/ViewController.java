@@ -21,9 +21,14 @@ public class ViewController {
         return "signup";
     }
 
-
     @GetMapping("/write-post")
     public String writePostPage() {
         return "write-post";
     }
+
+    @GetMapping("post-detail")
+    public String postDetailPage() {
+        return "post-detail";
+    }
+
 }
