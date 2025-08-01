@@ -30,4 +30,12 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public PostDetailResponseDto getPost(Long postId) {
+        Post post = postRepository.findById(postId).orElseThrow(() ->
+                new IllegalArgumentException("존재하지 않는 게시글입니다.")
+        );
+        return new PostDetailResponseDto(post);
+    }
+
 }

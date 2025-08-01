@@ -1,42 +1,38 @@
-package com.example.puppytalk.Post;
+package com.example.puppytalk.Comment;
 
-import com.example.puppytalk.Comment.Comment;
+import com.example.puppytalk.Post.Post;
 import com.example.puppytalk.Timestamped;
 import com.example.puppytalk.User.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Getter
-@Setter
 @NoArgsConstructor
-public class Post extends Timestamped {
+public class Comment extends Timestamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String title;
-
-    @Column(nullable = false, length = 5000)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 
-    public Post(String title, String content, User user) {
-        this.title = title;
+    public Comment(String content, User user, Post post) {
         this.content = content;
         this.user = user;
+        this.post = post;
     }
 }
