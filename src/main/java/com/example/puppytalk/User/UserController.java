@@ -1,6 +1,7 @@
 package com.example.puppytalk.User;
 
 import com.example.puppytalk.Jwt.JwtUtil;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,18 @@ public class UserController {
                 .body("로그인에 성공했습니다.");
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserInfoDto> getMyInfo(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        String nickname = userDetails.getUser().getNickname();
+        return ResponseEntity.ok(new UserInfoDto(nickname));
+    }
+
+    @Getter
+    class UserInfoDto {
+        private String nickname;
+        public UserInfoDto(String nickname) {
+            this.nickname = nickname;
+        }
+    }
 
 }

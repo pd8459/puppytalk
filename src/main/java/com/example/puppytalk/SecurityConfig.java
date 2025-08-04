@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/", "/login", "/signup", "/main", "/write-post", "/post-detail").permitAll()
+                        .requestMatchers("/", "/login", "/signup", "/main", "/write-post", "/post-detail", "/edit-post").permitAll()
                         .requestMatchers("/api/users/**", "/api/images").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .anyRequest().authenticated()

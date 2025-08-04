@@ -38,4 +38,24 @@ public class PostController {
     public PostDetailResponseDto getPost(@PathVariable Long postId) {
         return postService.getPost(postId);
     }
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<String> deletePost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        postService.deletePost(postId, userDetails.getUser());
+        return ResponseEntity.ok("게시글이 성공정으로 삭제되었습니다.");
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<String> updatePost(
+            @PathVariable Long postId,
+            @RequestBody PostRequestDto requestDto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        postService.updatePost(postId, requestDto, userDetails.getUser());
+        return ResponseEntity.ok("게시글이 성공적으로 수정되었습니다.");
+    }
+
 }

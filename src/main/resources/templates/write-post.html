@@ -41,14 +41,10 @@
         initialEditType: 'markdown',
         previewStyle: 'vertical',
         placeholder: '내용을 입력해주세요.',
-        // ✅ 이미지 업로드 기능 연동을 위한 hooks 추가
         hooks: {
             addImageBlobHook: async (blob, callback) => {
-                // 1. blob 데이터를 FormData로 감쌉니다.
                 const formData = new FormData();
                 formData.append('image', blob);
-
-                // 2. 우리가 만든 이미지 업로드 API를 호출합니다.
                 try {
                     const response = await fetch('/api/images', {
                         method: 'POST',
@@ -58,13 +54,9 @@
                     if (!response.ok) {
                         throw new Error('이미지 업로드 실패');
                     }
-
                     const data = await response.json();
                     const imageUrl = data.url;
-
-                    // 3. API가 반환해준 이미지 URL을 에디터의 콜백 함수에 전달합니다.
                     callback(imageUrl, 'image');
-
                 } catch (error) {
                     console.error('Upload failed:', error);
                     alert('이미지 업로드에 실패했습니다.');
