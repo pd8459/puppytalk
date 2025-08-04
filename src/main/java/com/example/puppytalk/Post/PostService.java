@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final ImageRepository imageRepository;
     private final FileUploadService fileUploadService;
 
     @Transactional
@@ -40,4 +41,42 @@ public class PostService {
         postRepository.save(post);
     }
 
+    @Transactional
+    public void deletePost(Long postId, User user) {
+        Post post = findPost(postId);
+
+        if(!post.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("게시글 삭제 권한이 없습니다.");
+        }
+
+        postRepository.delete(post);
+    }
+
+    @Transactional
+    public void updatePost(Long postId, PostRequestDto requestDto, User user) {
+        Post post = findPost(postId);
+        if (!post.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("게시글 수정 권한이 없습니다.");
+        }
+
+        List<Image> existingImages = post.getImages();
+        String content = requestDto.getContent();
+
+        List<Image> imagesToDelete = existingImages.stream()
+                .filter(image -> !content.contains(image.getImageUrl()))
+                .toList();
+
+        for (Image image : imagesToDelete) {
+            imageRepository.delete(image);
+        }
+
+        post.setTitle(requestDto.getTitle());
+        post.setContent(content);
+    }
+
+    private Post findPost(Long id) {
+        return postRepository.findById(id).orElseThrow(()->
+                new IllegalArgumentException("존재하지 않는 게시글입니다.")
+        );
+    }
 }

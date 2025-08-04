@@ -31,4 +31,9 @@ public class ViewController {
         return "post-detail";
     }
 
+    @GetMapping("/edit-post")
+    public String editPostPage() {
+        return "edit-post";
+    }
+
 }

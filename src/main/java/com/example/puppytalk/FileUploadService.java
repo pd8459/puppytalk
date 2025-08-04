@@ -36,4 +36,17 @@ public class FileUploadService {
         return originalFilename.substring(pos + 1);
     }
 
+    public void delete(String imageUrl) {
+        if(imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+
+        String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+        File file = new File(uploadDir + fileName);
+
+        if(file.exists()) {
+            file.delete();
+        }
+    }
+
 }
