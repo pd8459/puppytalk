@@ -14,6 +14,7 @@ public class PostDetailResponseDto {
     private String content;
     private String authorNickname;
     private LocalDateTime createdAt;
+    private List<String> imageUrls;
     private List<CommentResponseDto> comments;
 
         public PostDetailResponseDto(Post post) {
@@ -22,6 +23,17 @@ public class PostDetailResponseDto {
             this.content = post.getContent();
             this.authorNickname = post.getUser().getNickname();
             this.createdAt = post.getCreatedAt();
+
+            if (post.getUser() != null) {
+                this.authorNickname = post.getUser().getNickname();
+            } else {
+                this.authorNickname = "알 수 없는 사용자";
+            }
+
+            this.imageUrls = post.getImages().stream()
+                    .map(Image::getImageUrl)
+                    .collect(Collectors.toList());
+
             this.comments = post.getComments().stream()
                     .map(CommentResponseDto::new)
                     .collect(Collectors.toList());
