@@ -32,11 +32,18 @@ public class Post extends Timestamped {
     private User user;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Image> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
     public Post(String title, String content, User user) {
         this.title = title;
         this.content = content;
         this.user = user;
+    }
+
+    public void addImage(Image image) {
+        this.images.add(image);
     }
 }
