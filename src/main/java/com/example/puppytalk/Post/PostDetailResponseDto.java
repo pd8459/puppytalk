@@ -16,13 +16,17 @@ public class PostDetailResponseDto {
     private LocalDateTime createdAt;
     private List<String> imageUrls;
     private List<CommentResponseDto> comments;
+    private long likeCount;
+    private boolean isLiked;
 
-        public PostDetailResponseDto(Post post) {
+        public PostDetailResponseDto(Post post, long likeCount, boolean isLiked) {
             this.id = post.getId();
             this.title = post.getTitle();
             this.content = post.getContent();
             this.authorNickname = post.getUser().getNickname();
             this.createdAt = post.getCreatedAt();
+            this.likeCount = likeCount;
+            this.isLiked = isLiked;
 
             if (post.getUser() != null) {
                 this.authorNickname = post.getUser().getNickname();
