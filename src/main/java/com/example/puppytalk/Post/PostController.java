@@ -1,6 +1,8 @@
 package com.example.puppytalk.Post;
 
+import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserDetailsImpl;
+import com.example.puppytalk.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +20,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final LikeService likeService;
 
     @PostMapping
     public ResponseEntity<String> createPost(
@@ -35,8 +38,11 @@ public class PostController {
     }
 
     @GetMapping("/{postId}")
-    public PostDetailResponseDto getPost(@PathVariable Long postId) {
-        return postService.getPost(postId);
+    public PostDetailResponseDto getPost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        User user = (userDetails != null) ?userDetails.getUser() : null;
+        return postService.getPost(postId, user);
     }
 
     @DeleteMapping("/{postId}")
@@ -56,6 +62,20 @@ public class PostController {
 
         postService.updatePost(postId, requestDto, userDetails.getUser());
         return ResponseEntity.ok("게시글이 성공적으로 수정되었습니다.");
+    }
+
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<String> toggleLike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        boolean liked = likeService.toggleLike(postId, userDetails.getUser());
+
+        if(liked) {
+            return ResponseEntity.ok("좋아요가 추가되었습니다.");
+        } else {
+            return ResponseEntity.ok("좋아요가 취소되었습니다.");
+        }
     }
 
 }

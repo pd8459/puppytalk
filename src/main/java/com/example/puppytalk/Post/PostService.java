@@ -3,6 +3,7 @@ package com.example.puppytalk.Post;
 import com.example.puppytalk.FileUploadService;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserService;
+import com.example.puppytalk.like.PostLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
     private final FileUploadService fileUploadService;
+    private final PostLikeRepository postLikeRepository;
 
     @Transactional
     public List<PostResponseDto> getAllPosts() {
@@ -28,11 +30,14 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostDetailResponseDto getPost(Long postId) {
-        Post post = postRepository.findById(postId).orElseThrow(() ->
-                new IllegalArgumentException("존재하지 않는 게시글입니다.")
-        );
-        return new PostDetailResponseDto(post);
+    public PostDetailResponseDto getPost(Long postId, User user) {
+        Post post = findPost(postId);
+        long likeCount = postLikeRepository.countByPost(post);
+        boolean isLiked = false;
+        if (user != null) {
+            isLiked = postLikeRepository.findByUserAndPost(user,post).isPresent();
+        }
+        return new PostDetailResponseDto(post, likeCount, isLiked);
     }
 
     @Transactional
