@@ -3,6 +3,7 @@ package com.example.puppytalk.Comment;
 import com.example.puppytalk.Post.Post;
 import com.example.puppytalk.Timestamped;
 import com.example.puppytalk.User.User;
+import com.example.puppytalk.like.CommentLike;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,9 @@ public class Comment extends Timestamped {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentLike> Likes = new ArrayList<>();
 
     public Comment(String content, User user, Post post) {
         this.content = content;

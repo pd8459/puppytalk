@@ -1,6 +1,7 @@
 package com.example.puppytalk.Comment;
 
 import com.example.puppytalk.User.UserDetailsImpl;
+import com.example.puppytalk.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class CommentController {
 
     private final CommentService commentService;
+    private final LikeService likeService;
 
     @PostMapping("/api/posts/{postId}/comments")
     public ResponseEntity<String> createComment(
@@ -40,5 +42,19 @@ public class CommentController {
 
         commentService.deleteComment(commentId, userDetails.getUser());
         return ResponseEntity.ok("댓글이 성공적으로 삭제되었습니다.");
+    }
+
+    @PostMapping("/api/comments/{commentId}/like")
+    public ResponseEntity<String> toggleCommentLike(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        boolean liked = likeService.toggleCommentLike(commentId, userDetails.getUser());
+
+        if(liked) {
+            return ResponseEntity.ok("좋아요가 추가되었습니다.");
+        } else {
+            return ResponseEntity.ok("좋아요가 취소되었습니다.");
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.example.puppytalk.Post;
 import com.example.puppytalk.FileUploadService;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserService;
+import com.example.puppytalk.like.CommentLikeRepository;
 import com.example.puppytalk.like.PostLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class PostService {
     private final ImageRepository imageRepository;
     private final FileUploadService fileUploadService;
     private final PostLikeRepository postLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Transactional
     public List<PostResponseDto> getAllPosts() {
@@ -32,12 +34,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostDetailResponseDto getPost(Long postId, User user) {
         Post post = findPost(postId);
-        long likeCount = postLikeRepository.countByPost(post);
-        boolean isLiked = false;
-        if (user != null) {
-            isLiked = postLikeRepository.findByUserAndPost(user,post).isPresent();
-        }
-        return new PostDetailResponseDto(post, likeCount, isLiked);
+        return new PostDetailResponseDto(post, user, postLikeRepository , commentLikeRepository);
     }
 
     @Transactional
