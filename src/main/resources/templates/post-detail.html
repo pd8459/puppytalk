@@ -41,7 +41,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="postEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -49,12 +49,31 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input id="edit-title" class="form-control mb-2" placeholder="제목을 입력하세요" />
-                <textarea id="edit-content" class="form-control" rows="10" placeholder="내용을 입력하세요"></textarea>
+                <input id="edit-post-title" class="form-control mb-2" placeholder="제목을 입력하세요" />
+                <div id="edit-editor"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                <button type="button" class="btn btn-primary" id="save-edit-btn">저장</button>
+                <button type="button" class="btn btn-primary" id="save-post-btn">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="commentEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">댓글 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="edit-comment-content" class="form-control" rows="5"></textarea>
+                <input type="hidden" id="edit-comment-id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="save-comment-btn">저장</button>
             </div>
         </div>
     </div>
@@ -67,6 +86,14 @@
     const postId = new URLSearchParams(window.location.search).get('id');
     const token = localStorage.getItem('jwt');
     let postDataCache = null;
+    let currentUserCache = null;
+
+    const postEditEditor = new toastui.Editor({
+        el: document.querySelector('#edit-editor'),
+        height: '400px',
+        initialEditType: 'markdown',
+        previewStyle: 'vertical'
+    });
 
     window.addEventListener('DOMContentLoaded', fetchPostDetail);
 
@@ -83,46 +110,43 @@
             const postData = await postResponse.json();
             postDataCache = postData;
 
-            let currentUser = null;
             if (meResponse.ok) {
-                currentUser = await meResponse.json();
+                currentUserCache = await meResponse.json();
             }
 
             document.getElementById('post-title').textContent = postData.title;
             const formattedDate = new Date(postData.createdAt).toLocaleString('ko-KR');
             document.getElementById('post-meta').textContent = `작성자: ${postData.authorNickname} | 작성일: ${formattedDate}`;
 
-            toastui.Editor.factory({
+            new toastui.Editor.factory({
                 el: document.querySelector('#viewer'),
                 viewer: true,
                 initialValue: postData.content
             });
 
             const buttonsContainer = document.getElementById('buttons-container');
-            if (currentUser && currentUser.nickname === postData.authorNickname) {
+            buttonsContainer.innerHTML = '';
+            if (currentUserCache && currentUserCache.nickname === postData.authorNickname) {
                 buttonsContainer.innerHTML = `
                     <div>
-                        <button id="edit-btn" class="btn btn-secondary btn-sm">수정</button>
-                        <button id="delete-btn" class="btn btn-danger btn-sm">삭제</button>
+                        <button id="edit-post-btn" class="btn btn-secondary btn-sm">수정</button>
+                        <button id="delete-post-btn" class="btn btn-danger btn-sm">삭제</button>
                     </div>
                 `;
-                document.getElementById('edit-btn').addEventListener('click', openEditModal);
-                document.getElementById('delete-btn').addEventListener('click', deletePost);
+                document.getElementById('edit-post-btn').addEventListener('click', openPostEditModal);
+                document.getElementById('delete-post-btn').addEventListener('click', deletePost);
             }
 
             const likeButton = document.getElementById('like-btn');
             const likeCountSpan = document.getElementById('like-count');
             likeCountSpan.textContent = postData.likeCount;
             if (postData.isLiked) {
-                likeButton.classList.remove('btn-outline-danger');
-                likeButton.classList.add('btn-danger');
+                likeButton.classList.replace('btn-outline-danger', 'btn-danger');
             } else {
-                likeButton.classList.remove('btn-danger');
-                likeButton.classList.add('btn-outline-danger');
+                likeButton.classList.replace('btn-danger', 'btn-outline-danger');
             }
 
-            likeButton.replaceWith(likeButton.cloneNode(true));
-            document.getElementById('like-btn').addEventListener('click', toggleLike);
+            likeButton.onclick = toggleLike;
 
             renderComments(postData.comments);
         } catch (error) {
@@ -138,67 +162,58 @@
             const commentEl = document.createElement('div');
             commentEl.className = 'card card-body mb-2';
             const commentDate = new Date(comment.createdAt).toLocaleString('ko-KR');
+            let buttonsHtml = '';
+            if (currentUserCache && currentUserCache.nickname === comment.authorNickname) {
+                buttonsHtml = `
+                    <div class="mt-2">
+                        <button class="btn btn-secondary btn-sm" onclick="openCommentEditModal(${comment.id}, \`${comment.content}\`)">수정</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteComment(${comment.id})">삭제</button>
+                    </div>
+                `;
+            }
             commentEl.innerHTML = `
                 <strong>${comment.authorNickname}</strong>
                 <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
                 <small class="text-muted">${commentDate}</small>
+                ${buttonsHtml}
             `;
             commentList.appendChild(commentEl);
         });
     }
 
     async function toggleLike() {
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            return;
-        }
+        if (!token) { alert('로그인이 필요합니다.'); return; }
         try {
             const response = await fetch(`/api/posts/${postId}/like`, {
                 method: 'POST',
                 headers: { 'Authorization': token }
             });
-            if (response.ok) {
-                fetchPostDetail();
-            } else {
-                alert('좋아요 처리에 실패했습니다.');
-            }
-        } catch (error) {
-            alert('좋아요 처리 중 오류가 발생했습니다.');
-        }
+            if (response.ok) { fetchPostDetail(); }
+            else { alert('좋아요 처리에 실패했습니다.'); }
+        } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
     }
 
-    function openEditModal() {
+    function openPostEditModal() {
         if (!postDataCache) return;
-        document.getElementById('edit-title').value = postDataCache.title;
-        document.getElementById('edit-content').value = postDataCache.content;
-        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-        editModal.show();
+        document.getElementById('edit-post-title').value = postDataCache.title;
+        postEditEditor.setMarkdown(postDataCache.content);
+        new bootstrap.Modal(document.getElementById('postEditModal')).show();
     }
 
-    document.getElementById('save-edit-btn').addEventListener('click', async () => {
-        const title = document.getElementById('edit-title').value;
-        const content = document.getElementById('edit-content').value;
-
+    document.getElementById('save-post-btn').addEventListener('click', async () => {
+        const title = document.getElementById('edit-post-title').value;
+        const content = postEditEditor.getMarkdown();
         try {
             const response = await fetch(`/api/posts/${postId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': token },
                 body: JSON.stringify({ title, content })
             });
-
             if (response.ok) {
-                alert('게시글이 수정되었습니다.');
-                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                bootstrap.Modal.getInstance(document.getElementById('postEditModal')).hide();
                 fetchPostDetail();
-            } else {
-                alert('게시글 수정에 실패했습니다.');
-            }
-        } catch (error) {
-            alert('게시글 수정 중 오류가 발생했습니다.');
-        }
+            } else { alert('게시글 수정에 실패했습니다.'); }
+        } catch (error) { alert('게시글 수정 중 오류가 발생했습니다.'); }
     });
 
     async function deletePost() {
@@ -211,40 +226,59 @@
             if (response.ok) {
                 alert('게시글이 삭제되었습니다.');
                 window.location.href = '/main';
-            } else {
-                alert('게시글 삭제에 실패했습니다.');
-            }
-        } catch (error) {
-            alert('게시글 삭제 중 오류가 발생했습니다.');
-        }
+            } else { alert('게시글 삭제에 실패했습니다.'); }
+        } catch (error) { alert('게시글 삭제 중 오류가 발생했습니다.'); }
+    }
+
+    function openCommentEditModal(commentId, currentContent) {
+        document.getElementById('edit-comment-id').value = commentId;
+        document.getElementById('edit-comment-content').value = currentContent;
+        new bootstrap.Modal(document.getElementById('commentEditModal')).show();
+    }
+
+    document.getElementById('save-comment-btn').addEventListener('click', async () => {
+        const commentId = document.getElementById('edit-comment-id').value;
+        const content = document.getElementById('edit-comment-content').value;
+        try {
+            const response = await fetch(`/api/comments/${commentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                body: JSON.stringify({ content })
+            });
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('commentEditModal')).hide();
+                fetchPostDetail();
+            } else { alert('댓글 수정에 실패했습니다.'); }
+        } catch (error) { alert('댓글 수정 중 오류가 발생했습니다.'); }
+    });
+
+    async function deleteComment(commentId) {
+        if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
+        try {
+            const response = await fetch(`/api/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+            });
+            if (response.ok) { fetchPostDetail(); }
+            else { alert('댓글 삭제에 실패했습니다.'); }
+        } catch (error) { alert('댓글 삭제 중 오류가 발생했습니다.'); }
     }
 
     document.getElementById('comment-form').addEventListener('submit', async function(event) {
         event.preventDefault();
         const content = document.getElementById('comment-content').value;
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            window.location.href = '/login';
-            return;
-        }
+        if (!token) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
         try {
             const response = await fetch(`/api/posts/${postId}/comments`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': token },
                 body: JSON.stringify({ content })
             });
             if (response.ok) {
                 document.getElementById('comment-content').value = '';
                 fetchPostDetail();
-            } else {
-                alert('댓글 작성에 실패했습니다.');
-            }
-        } catch (error) {
-            alert('댓글 작성 중 오류가 발생했습니다.');
-        }
+            } else { alert('댓글 작성에 실패했습니다.'); }
+        } catch (error) { alert('댓글 작성 중 오류가 발생했습니다.'); }
     });
 </script>
 </body>
