@@ -23,4 +23,28 @@ public class CommentService {
         Comment comment = new Comment(requestDto.getContent(), user, post);
         commentRepository.save(comment);
     }
+
+    @Transactional
+    public void updateComment(Long commentId, CommentRequestDto requestDto, User user) {
+        Comment comment = findComment(commentId);
+        if(!comment.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("댓글 수정 권한이 없습니다.");
+        }
+        comment.setContent(requestDto.getContent());
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, User user) {
+        Comment comment = findComment(commentId);
+        if(!comment.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("댓글 삭제 권한이 없습니다.");
+        }
+        commentRepository.delete(comment);
+    }
+
+    public Comment findComment(Long id) {
+        return commentRepository.findById(id).orElseThrow(()->
+                new IllegalArgumentException("존재하지 않 댓글입니다.")
+        );
+    }
 }
