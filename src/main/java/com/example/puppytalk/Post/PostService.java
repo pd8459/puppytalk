@@ -6,6 +6,8 @@ import com.example.puppytalk.User.UserService;
 import com.example.puppytalk.like.CommentLikeRepository;
 import com.example.puppytalk.like.PostLikeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,11 +26,10 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
 
-    @Transactional
-    public List<PostResponseDto> getAllPosts() {
-        return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(PostResponseDto::new)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<PostResponseDto> getAllPosts(Pageable pageable) {
+        Page<Post> posts = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return posts.map(PostResponseDto::new);
     }
 
     @Transactional(readOnly = true)

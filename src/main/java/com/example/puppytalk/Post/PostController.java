@@ -4,6 +4,10 @@ import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserDetailsImpl;
 import com.example.puppytalk.like.LikeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +37,14 @@ public class PostController {
 
 
     @GetMapping
-    public List<PostResponseDto> getAllPosts() {
-        return postService.getAllPosts();
+    public Page<PostResponseDto> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        // 정렬 기준 설정 (생성일 내림차순)
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return postService.getAllPosts(pageable);
     }
 
     @GetMapping("/{postId}")
