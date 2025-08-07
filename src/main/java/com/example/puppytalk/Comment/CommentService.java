@@ -3,7 +3,10 @@ package com.example.puppytalk.Comment;
 import com.example.puppytalk.Post.Post;
 import com.example.puppytalk.Post.PostRepository;
 import com.example.puppytalk.User.User;
+import com.example.puppytalk.like.CommentLikeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +16,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Transactional
     public void createComment(Long postId, CommentRequestDto requestDto, User user) {
@@ -44,7 +48,19 @@ public class CommentService {
 
     public Comment findComment(Long id) {
         return commentRepository.findById(id).orElseThrow(()->
-                new IllegalArgumentException("존재하지 않 댓글입니다.")
+                new IllegalArgumentException("존재하지 않는 댓글입니다.")
         );
+    }
+
+    public Page<CommentResponseDto> getCommentsByPost(Long postId, User user, Pageable pageable) {
+        Post post = postRepository.findById(postId).orElseThrow(()->
+                new IllegalArgumentException("존재하지 않는 않는 게시글입니다.")
+        );
+        Page<Comment> comments = commentRepository.findByPostOrderByCreatedAtAsc(post, pageable);
+        return comments.map(comment -> new CommentResponseDto(
+                comment,
+                commentLikeRepository.countByComment(comment),
+                user != null && commentLikeRepository.findByUserAndComment(user, comment).isPresent()
+        ));
     }
 }

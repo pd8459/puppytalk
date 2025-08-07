@@ -1,12 +1,17 @@
 package com.example.puppytalk.Comment;
 
+import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserDetailsImpl;
 import com.example.puppytalk.like.LikeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -56,5 +61,15 @@ public class CommentController {
         } else {
             return ResponseEntity.ok("좋아요가 취소되었습니다.");
         }
+    }
+
+    @GetMapping("/api/posts/{postId}/comments")
+    public Page<CommentResponseDto> getCommentsByPost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+
+        User user = (userDetails != null) ? userDetails.getUser() : null;
+        return commentService.getCommentsByPost(postId, user, pageable);
     }
 }
