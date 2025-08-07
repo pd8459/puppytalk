@@ -29,6 +29,9 @@
     <div class="mt-4">
         <h5>댓글</h5>
         <div id="comment-list"></div>
+        <nav class="mt-3">
+            <ul class="pagination pagination-sm justify-content-center" id="comment-pagination"></ul>
+        </nav>
     </div>
 
     <div class="mt-4 mb-5">
@@ -87,6 +90,7 @@
     const token = localStorage.getItem('jwt');
     let postDataCache = null;
     let currentUserCache = null;
+    let currentCommentPage = 0;
 
     const postEditEditor = new toastui.Editor({
         el: document.querySelector('#edit-editor'),
@@ -98,7 +102,7 @@
                 const formData = new FormData();
                 formData.append('image', blob);
                 try {
-                    const response = await fetch('/api/images', { method: 'POST', body: formData });
+                    const response = await fetch('/api/images', { method: 'POST', headers: { 'Authorization': token }, body: formData });
                     if (!response.ok) throw new Error('이미지 업로드 실패');
                     const data = await response.json();
                     callback(data.url, 'image');
@@ -107,7 +111,10 @@
         }
     });
 
-    window.addEventListener('DOMContentLoaded', fetchPostDetail);
+    window.addEventListener('DOMContentLoaded', () => {
+        fetchPostDetail();
+        fetchComments(0);
+    });
 
     async function fetchPostDetail() {
         try {
@@ -130,6 +137,7 @@
             const formattedDate = new Date(postData.createdAt).toLocaleString('ko-KR');
             document.getElementById('post-meta').textContent = `작성자: ${postData.authorNickname} | 작성일: ${formattedDate}`;
 
+            document.getElementById('viewer').innerHTML = '';
             new toastui.Editor.factory({
                 el: document.querySelector('#viewer'),
                 viewer: true,
@@ -158,11 +166,24 @@
                 likeButton.classList.replace('btn-danger', 'btn-outline-danger');
             }
             likeButton.onclick = togglePostLike;
-
-            renderComments(postData.comments);
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error fetching post detail:', error);
             document.querySelector('.container').innerHTML = '<h2>게시글을 찾을 수 없습니다.</h2>';
+        }
+    }
+
+    async function fetchComments(page = 0) {
+        currentCommentPage = page;
+        const fetchOptions = token ? { headers: { 'Authorization': token } } : {};
+        try {
+            const response = await fetch(`/api/posts/${postId}/comments?page=${page}&size=5`, fetchOptions);
+            if (!response.ok) throw new Error('댓글을 불러올 수 없습니다.');
+            const pageData = await response.json();
+            renderComments(pageData.content);
+            renderCommentPagination(pageData);
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+            document.getElementById('comment-list').innerHTML = '<div class="alert alert-danger">댓글을 불러오는데 실패했습니다.</div>';
         }
     }
 
@@ -176,10 +197,8 @@
             let buttonsHtml = '';
             if (currentUserCache && currentUserCache.nickname === comment.authorNickname) {
                 buttonsHtml = `
-                    <div class="mt-2">
-                        <button class="btn btn-secondary btn-sm" onclick="openCommentEditModal(${comment.id}, \`${comment.content}\`)">수정</button>
-                        <button class="btn btn-danger btn-sm ms-1" onclick="deleteComment(${comment.id})">삭제</button>
-                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="openCommentEditModal(${comment.id}, \`${comment.content}\`)">수정</button>
+                    <button class="btn btn-danger btn-sm ms-1" onclick="deleteComment(${comment.id})">삭제</button>
                 `;
             }
             const likeBtnClass = comment.isLiked ? 'btn-danger' : 'btn-outline-danger';
@@ -204,6 +223,32 @@
         });
     }
 
+    function renderCommentPagination(pageData) {
+        const paginationContainer = document.getElementById('comment-pagination');
+        paginationContainer.innerHTML = '';
+        const currentPage = pageData.number;
+        const totalPages = pageData.totalPages;
+
+        if (totalPages <= 1) return;
+
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchComments(${currentPage - 1})">이전</a>`;
+        paginationContainer.appendChild(prevLi);
+
+        for (let i = 0; i < totalPages; i++) {
+            const pageLi = document.createElement('li');
+            pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            pageLi.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchComments(${i})">${i + 1}</a>`;
+            paginationContainer.appendChild(pageLi);
+        }
+
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchComments(${currentPage + 1})">다음</a>`;
+        paginationContainer.appendChild(nextLi);
+    }
+
     async function togglePostLike() {
         if (!token) { alert('로그인이 필요합니다.'); return; }
         try {
@@ -217,7 +262,7 @@
         if (!token) { alert('로그인이 필요합니다.'); return; }
         try {
             const response = await fetch(`/api/comments/${commentId}/like`, { method: 'POST', headers: { 'Authorization': token } });
-            if (response.ok) { fetchPostDetail(); }
+            if (response.ok) { fetchComments(currentCommentPage); }
             else { alert('좋아요 처리에 실패했습니다.'); }
         } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
     }
@@ -273,7 +318,7 @@
             });
             if (response.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('commentEditModal')).hide();
-                fetchPostDetail();
+                fetchComments(currentCommentPage);
             } else { alert('댓글 수정에 실패했습니다.'); }
         } catch (error) { alert('댓글 수정 중 오류가 발생했습니다.'); }
     });
@@ -282,7 +327,7 @@
         if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
         try {
             const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE', headers: { 'Authorization': token } });
-            if (response.ok) { fetchPostDetail(); }
+            if (response.ok) { fetchComments(currentCommentPage); }
             else { alert('댓글 삭제에 실패했습니다.'); }
         } catch (error) { alert('댓글 삭제 중 오류가 발생했습니다.'); }
     }
@@ -299,7 +344,7 @@
             });
             if (response.ok) {
                 document.getElementById('comment-content').value = '';
-                fetchPostDetail();
+                fetchComments(currentCommentPage);
             } else { alert('댓글 작성에 실패했습니다.'); }
         } catch (error) { alert('댓글 작성 중 오류가 발생했습니다.'); }
     });
