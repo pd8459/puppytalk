@@ -14,43 +14,62 @@
         <a href="/write-post" class="btn btn-primary">글쓰기</a>
     </div>
 
-    <div id="post-list">
+    <div class="mb-4">
+        <form id="search-form" class="d-flex">
+            <input class="form-control me-2" type="search" id="search-keyword" placeholder="제목으로 검색">
+            <button class="btn btn-outline-success" type="submit">검색</button>
+        </form>
     </div>
 
+    <div id="post-list"></div>
+
     <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center" id="pagination">
-        </ul>
+        <ul class="pagination justify-content-center" id="pagination"></ul>
     </nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    let currentKeyword = '';
+
     window.addEventListener('DOMContentLoaded', () => fetchPosts(0));
 
-    async function fetchPosts(page) {
+    async function fetchPosts(page, keyword = '') {
+        currentKeyword = keyword;
+        let url = '';
+
+        if (keyword) {
+            url = `/api/posts/search?keyword=${keyword}&page=${page}&size=10`;
+        } else {
+            url = `/api/posts?page=${page}&size=10`;
+        }
+
         try {
-            const response = await fetch(`/api/posts?page=${page}&size=10`);
+            const response = await fetch(url);
             const pageData = await response.json();
             const posts = pageData.content;
 
             const postListContainer = document.getElementById('post-list');
             postListContainer.innerHTML = '';
 
-            posts.forEach(post => {
-                const postCard = document.createElement('div');
-                postCard.className = 'card mb-3';
-                const formattedDate = new Date(post.createdAt).toLocaleString('ko-KR');
-                postCard.innerHTML = `
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="/post-detail?id=${post.id}" class="text-decoration-none text-dark">${post.title}</a></h5>
-                        <p class="card-subtitle text-muted">
-                            작성자: ${post.authorNickname} | 작성일: ${formattedDate}
-                        </p>
-                    </div>
-                `;
-                postListContainer.appendChild(postCard);
-            });
-
+            if (posts.length === 0) {
+                postListContainer.innerHTML = '<p class="text-center">표시할 게시글이 없습니다.</p>';
+            } else {
+                posts.forEach(post => {
+                    const postCard = document.createElement('div');
+                    postCard.className = 'card mb-3';
+                    const formattedDate = new Date(post.createdAt).toLocaleString('ko-KR');
+                    postCard.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title"><a href="/post-detail?id=${post.id}" class="text-decoration-none text-dark">${post.title}</a></h5>
+                            <p class="card-subtitle text-muted">
+                                작성자: ${post.authorNickname} | 작성일: ${formattedDate}
+                            </p>
+                        </div>
+                    `;
+                    postListContainer.appendChild(postCard);
+                });
+            }
             renderPagination(pageData);
         } catch (error) {
             console.error('Error:', error);
@@ -60,32 +79,33 @@
     function renderPagination(pageData) {
         const paginationContainer = document.getElementById('pagination');
         paginationContainer.innerHTML = '';
-
         const currentPage = pageData.number;
         const totalPages = pageData.totalPages;
 
-        const prevLi = document.createElement('li');
-        prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
-        prevLi.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchPosts(${currentPage - 1})">이전</a>`;
-        paginationContainer.appendChild(prevLi);
+        const createPageLink = (page, text, isDisabled = false, isActive = false) => {
+            const li = document.createElement('li');
+            li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchPosts(${page}, currentKeyword)">${text}</a>`;
+            return li;
+        };
 
+        paginationContainer.appendChild(createPageLink(currentPage - 1, '이전', currentPage === 0));
         for (let i = 0; i < totalPages; i++) {
-            const pageLi = document.createElement('li');
-            pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
-            pageLi.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchPosts(${i})">${i + 1}</a>`;
-            paginationContainer.appendChild(pageLi);
+            paginationContainer.appendChild(createPageLink(i, i + 1, false, i === currentPage));
         }
-
-        const nextLi = document.createElement('li');
-        nextLi.className = `page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}`;
-        nextLi.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchPosts(${currentPage + 1})">다음</a>`;
-        paginationContainer.appendChild(nextLi);
+        paginationContainer.appendChild(createPageLink(currentPage + 1, '다음', currentPage === totalPages - 1));
     }
+
+    document.getElementById('search-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const keyword = document.getElementById('search-keyword').value;
+        fetchPosts(0, keyword);
+    });
 
     document.getElementById('logout-btn').addEventListener('click', function(event) {
         event.preventDefault();
         localStorage.removeItem('jwt');
-        alert('로그인이 되었습니다.');
+        alert('로그아웃 되었습니다.');
         window.location.href = '/login';
     });
 </script>

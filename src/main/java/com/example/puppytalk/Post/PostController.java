@@ -88,4 +88,14 @@ public class PostController {
         }
     }
 
+    @GetMapping("/search")
+    public Page<PostResponseDto> searchPosts(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return postService.searchPosts(keyword, pageable);
+    }
 }
