@@ -82,4 +82,10 @@ public class PostService {
                 new IllegalArgumentException("존재하지 않는 게시글입니다.")
         );
     }
+
+    @Transactional(readOnly = true)
+    public Page<PostResponseDto> searchPosts(String keyword, Pageable pageable) {
+        Page<Post> posts = postRepository.findByTitleContaining(keyword, pageable);
+        return posts.map(PostResponseDto::new);
+    }
 }
