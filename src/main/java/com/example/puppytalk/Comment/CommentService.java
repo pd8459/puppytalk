@@ -69,25 +69,21 @@ public class CommentService {
         Post post = postRepository.findById(postId).orElseThrow(() ->
                 new IllegalArgumentException("존재하지 않는 게시글입니다.")
         );
-
         Page<Comment> comments = commentRepository.findByPostAndParentIsNullOrderByCreatedAtAsc(post, pageable);
-        return comments.map(comment -> {
-            CommentResponseDto parentDto = new CommentResponseDto(
-                    comment,
-                    commentLikeRepository.countByComment(comment),
-                    user != null && commentLikeRepository.findByUserAndComment(user, comment).isPresent()
-            );
-            List<CommentResponseDto> childDtos = comment.getChildren().stream()
-                    .map(child -> new CommentResponseDto(
-                            child,
-                            commentLikeRepository.countByComment(child),
-                            user != null && commentLikeRepository.findByUserAndComment(user, child).isPresent()
-                    ))
-                    .collect(Collectors.toList());
+        return comments.map(comment -> convertToDto(comment, user));
+    }
 
-            parentDto.setChildren(childDtos);
+    private CommentResponseDto convertToDto(Comment comment, User user) {
+        CommentResponseDto dto = new CommentResponseDto(
+                comment,
+                commentLikeRepository.countByComment(comment),
+                user != null && commentLikeRepository.findByUserAndComment(user, comment).isPresent()
+        );
+        List<CommentResponseDto> childrenDtos = comment.getChildren().stream()
+                .map(child -> convertToDto(child, user))
+                .collect(Collectors.toList());
+        dto.setChildren(childrenDtos);
 
-            return parentDto;
-        });
+        return dto;
     }
 }

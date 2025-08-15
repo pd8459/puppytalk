@@ -201,30 +201,25 @@
         commentList.innerHTML = '';
         comments.forEach(comment => {
             commentList.appendChild(createCommentElement(comment));
-            if (comment.children && comment.children.length > 0) {
-                comment.children.forEach(child => {
-                    commentList.appendChild(createCommentElement(child, true));
-                });
-            }
         });
     }
 
     function createCommentElement(comment, isChild = false) {
         const commentEl = document.createElement('div');
         commentEl.className = 'card card-body mb-2';
-        if (isChild) {
-            commentEl.style.marginLeft = '30px';
-        }
+
         const commentDate = new Date(comment.createdAt).toLocaleString('ko-KR');
         let buttonsHtml = '';
         if (currentUserCache && currentUserCache.nickname === comment.authorNickname) {
             buttonsHtml = `
-                <button class="btn btn-secondary btn-sm" onclick="openCommentEditModal(${comment.id}, \`${comment.content}\`)">수정</button>
-                <button class="btn btn-danger btn-sm ms-1" onclick="deleteComment(${comment.id})">삭제</button>
-            `;
+            <button class="btn btn-secondary btn-sm" onclick="openCommentEditModal(${comment.id}, \`${comment.content}\`)">수정</button>
+            <button class="btn btn-danger btn-sm ms-1" onclick="deleteComment(${comment.id})">삭제</button>
+        `;
         }
         const likeBtnClass = comment.isLiked ? 'btn-danger' : 'btn-outline-danger';
+
         commentEl.innerHTML = `
+        <div class="comment-main-content">
             <div class="d-flex justify-content-between">
                 <div>
                     <strong>${comment.authorNickname}</strong>
@@ -241,7 +236,17 @@
                     ❤️ <span id="comment-like-count-${comment.id}">${comment.likeCount}</span>
                 </button>
             </div>
-        `;
+        </div>
+        <div class="children-container" style="margin-left: 30px; margin-top: 10px;"></div>
+    `;
+
+        if (comment.children && comment.children.length > 0) {
+            const childrenContainer = commentEl.querySelector('.children-container');
+            comment.children.forEach(child => {
+                childrenContainer.appendChild(createCommentElement(child, true));
+            });
+        }
+
         return commentEl;
     }
 
