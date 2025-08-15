@@ -30,6 +30,16 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED).body("댓글이 성공적으로 작성되었습니다.");
     }
 
+    @PostMapping("/api/comments/{parentId}/replies")
+    public ResponseEntity<String> createReply(
+            @PathVariable Long parentId,
+            @RequestBody CommentRequestDto requestDto, // content만 있는 DTO 사용
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        commentService.createReply(parentId, requestDto, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.CREATED).body("답글이 성공적으로 작성되었습니다.");
+    }
+
     @PutMapping("/api/comments/{commentId}")
     public ResponseEntity<String> updateComment(
             @PathVariable Long commentId,

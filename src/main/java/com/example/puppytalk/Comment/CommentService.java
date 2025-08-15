@@ -10,6 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class CommentService {
@@ -20,12 +23,21 @@ public class CommentService {
 
     @Transactional
     public void createComment(Long postId, CommentRequestDto requestDto, User user) {
-        Post post = postRepository.findById(postId).orElseThrow(()->
-                new IllegalArgumentException("선택 게시글은 존재하지 않습니다.")
+        Post post = postRepository.findById(postId).orElseThrow(() ->
+                new IllegalArgumentException("선택한 게시글은 존재하지 않습니다.")
         );
 
-        Comment comment = new Comment(requestDto.getContent(), user, post);
+        Comment comment = new Comment(requestDto.getContent(), user, post, null);
         commentRepository.save(comment);
+    }
+
+    @Transactional
+    public void createReply(Long parentId, CommentRequestDto requestDto, User user) {
+        Comment parentComment = findComment(parentId);
+        Post post = parentComment.getPost();
+
+        Comment reply = new Comment(requestDto.getContent(), user, post, parentComment);
+        commentRepository.save(reply);
     }
 
     @Transactional
@@ -52,15 +64,26 @@ public class CommentService {
         );
     }
 
+    @Transactional(readOnly = true)
     public Page<CommentResponseDto> getCommentsByPost(Long postId, User user, Pageable pageable) {
-        Post post = postRepository.findById(postId).orElseThrow(()->
-                new IllegalArgumentException("존재하지 않는 않는 게시글입니다.")
+        Post post = postRepository.findById(postId).orElseThrow(() ->
+                new IllegalArgumentException("존재하지 않는 게시글입니다.")
         );
-        Page<Comment> comments = commentRepository.findByPostOrderByCreatedAtAsc(post, pageable);
-        return comments.map(comment -> new CommentResponseDto(
+        Page<Comment> comments = commentRepository.findByPostAndParentIsNullOrderByCreatedAtAsc(post, pageable);
+        return comments.map(comment -> convertToDto(comment, user));
+    }
+
+    private CommentResponseDto convertToDto(Comment comment, User user) {
+        CommentResponseDto dto = new CommentResponseDto(
                 comment,
                 commentLikeRepository.countByComment(comment),
                 user != null && commentLikeRepository.findByUserAndComment(user, comment).isPresent()
-        ));
+        );
+        List<CommentResponseDto> childrenDtos = comment.getChildren().stream()
+                .map(child -> convertToDto(child, user))
+                .collect(Collectors.toList());
+        dto.setChildren(childrenDtos);
+
+        return dto;
     }
 }
