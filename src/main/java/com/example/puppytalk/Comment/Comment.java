@@ -36,9 +36,17 @@ public class Comment extends Timestamped {
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CommentLike> Likes = new ArrayList<>();
 
-    public Comment(String content, User user, Post post) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Comment parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> children;
+
+    public Comment(String content, User user, Post post, Comment parent) {
         this.content = content;
         this.user = user;
         this.post = post;
+        this.parent = parent;
     }
 }
