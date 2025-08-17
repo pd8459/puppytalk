@@ -33,9 +33,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/", "/login", "/signup", "/main", "/write-post", "/post-detail", "/edit-post").permitAll()
+                        .requestMatchers("/", "/login", "/signup", "/main", "/write-post", "/post-detail", "/edit-post","classifier").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                        .requestMatchers("/api/ai/classify-dog").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class);

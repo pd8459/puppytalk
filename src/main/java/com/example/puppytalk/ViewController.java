@@ -36,4 +36,9 @@ public class ViewController {
         return "edit-post";
     }
 
+    @GetMapping("/classifier")
+    public String classifierPage() {
+        return "classifier";
+    }
+
 }
