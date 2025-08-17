@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PuppyTalk - AI 품종 분석기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 페이지 중앙 정렬을 위한 간단한 스타일 */
+        .main-container {
+            max-width: 600px;
+            margin-top: 5rem;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container main-container">
+    <div class="card text-center">
+        <div class="card-header">
+            <h4 class="card-title mb-0">🐾 AI 강아지 품종 분석기</h4>
+        </div>
+        <div class="card-body">
+            <p class="card-text">궁금한 강아지의 사진을 업로드하면 AI가 품종을 분석해 드립니다.</p>
+
+            <div class="mb-3">
+                <img id="image-preview" src="#" alt="미리보기" style="max-width: 100%; max-height: 300px; display: none; margin-bottom: 1rem;">
+            </div>
+
+            <div class="input-group">
+                <input class="form-control" type="file" id="dog-image-input" accept="image/jpeg, image/png">
+            </div>
+
+            <button class="btn btn-primary mt-3 w-100" id="classify-btn">분석하기</button>
+
+            <div id="ai-result" class="mt-4"></div>
+        </div>
+        <div class="card-footer text-muted">
+            결과는 100% 정확하지 않을 수 있습니다.
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const classifyBtn = document.getElementById('classify-btn');
+    const imageInput = document.getElementById('dog-image-input');
+    const resultDiv = document.getElementById('ai-result');
+    const imagePreview = document.getElementById('image-preview');
+
+    // 파일 입력창에 변화가 생기면 이미지 미리보기를 업데이트합니다.
+    imageInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+            resultDiv.innerHTML = ''; // 이전 결과 초기화
+        }
+    });
+
+    // '분석하기' 버튼에 클릭 이벤트 리스너를 추가합니다.
+    classifyBtn.addEventListener('click', async () => {
+        const file = imageInput.files[0];
+
+        if (!file) {
+            resultDiv.innerHTML = '<div class="alert alert-warning">분석할 이미지를 먼저 선택해주세요.</div>';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        resultDiv.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    분석 중입니다... 잠시만 기다려주세요.
+                </div>
+            `;
+
+        try {
+            const response = await fetch('/api/ai/classify-dog', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                const predictedBreed = await response.text();
+                const formattedBreed = predictedBreed.replace(/_/g, ' ').toUpperCase();
+                resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">분석 결과</h5>
+                            <p>이 강아지는 <strong>${formattedBreed}</strong>일 확률이 높습니다!</p>
+                        </div>
+                    `;
+            } else {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
+        } catch (error) {
+            console.error('분석 요청 실패:', error);
+            resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>오류 발생:</strong> ${error.message}
+                    </div>
+                `;
+        }
+    });
+</script>
+</body>
+</html>
