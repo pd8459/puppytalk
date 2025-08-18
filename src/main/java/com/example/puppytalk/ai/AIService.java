@@ -39,4 +39,15 @@ public class AIService {
         );
         return response.getBody().getPredicted_breed();
     }
+
+    public String getChatbotResponse(String question) {
+        RestTemplate restTemplate = new RestTemplate();
+        ChatRequestDto requestDto = new ChatRequestDto(question);
+        ResponseEntity<ChatResponseDto> response = restTemplate.postForEntity(
+                AI_SERVER_URL + "/chat",
+                    requestDto,
+                    ChatResponseDto.class
+        );
+        return response.getBody().getAnswer();
+    }
 }

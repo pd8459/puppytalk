@@ -41,4 +41,9 @@ public class ViewController {
         return "classifier";
     }
 
+    @GetMapping("/chatbot")
+    public String chatbotPage() {
+        return "chatbot";
+    }
+
 }
