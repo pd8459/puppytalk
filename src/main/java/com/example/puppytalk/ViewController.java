@@ -46,4 +46,7 @@ public class ViewController {
         return "chatbot";
     }
 
+    @GetMapping("/mypage")
+    public String mypagePage() { return "mypage";}
+
 }
