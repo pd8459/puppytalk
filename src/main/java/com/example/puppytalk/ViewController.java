@@ -1,6 +1,9 @@
 package com.example.puppytalk;
 
+import com.example.puppytalk.User.UserDetailsImpl;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
@@ -48,5 +51,9 @@ public class ViewController {
 
     @GetMapping("/mypage")
     public String mypagePage() { return "mypage";}
+
+    @GetMapping("/profile/edit")
+    public String profileEditPage() { return "profile-edit";}
+
 
 }

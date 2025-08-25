@@ -1,4 +1,4 @@
-package com.example.puppytalk.Post;
+package com.example.puppytalk.image;
 
 import com.example.puppytalk.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +15,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ImageController {
 
-    private final FileUploadService fileUploadService;
+    private final ImageService imageService;
 
     @PostMapping("/api/images")
-    public ResponseEntity<?> uploadImage(@RequestParam("image")MultipartFile image) throws IOException {
+    public ResponseEntity<?> uploadImage(@RequestParam("image") MultipartFile image) throws IOException {
         if (image.isEmpty()) {
-            return ResponseEntity.badRequest().body("이미지 파일이 비어있습니.");
+            return ResponseEntity.badRequest().body("이미지 파일이 비어있습니다.");
         }
-        String imageUrl = fileUploadService.upload(image);
+        String imageUrl = imageService.storeFile(image);
         return ResponseEntity.ok(Map.of("url", imageUrl));
     }
 }

@@ -1,5 +1,6 @@
-package com.example.puppytalk.Post;
+package com.example.puppytalk.image;
 
+import com.example.puppytalk.Post.Post;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

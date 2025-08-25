@@ -3,6 +3,7 @@ package com.example.puppytalk.Post;
 import com.example.puppytalk.Comment.Comment;
 import com.example.puppytalk.Timestamped;
 import com.example.puppytalk.User.User;
+import com.example.puppytalk.image.Image;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

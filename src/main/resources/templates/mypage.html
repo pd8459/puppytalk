@@ -9,7 +9,10 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container mt-4">
-    <h2 class="mb-3" id="nickname-header">마이페이지</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 id="nickname-header">마이페이지</h2>
+        <a href="/profile/edit" class="btn btn-outline-secondary">프로필 수정</a>
+    </div>
 
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
@@ -33,7 +36,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
     const token = localStorage.getItem('jwt');
 
@@ -45,7 +47,7 @@
         }
 
         try {
-            const res = await fetch('/api/users/me', {
+            const res = await fetch('/api/profile', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             if (!res.ok) throw new Error('인증 정보가 유효하지 않습니다.');
@@ -64,29 +66,15 @@
     document.getElementById('comments-tab').addEventListener('click', () => fetchMyComments(0));
 
     async function fetchMyPosts(page) {
-        const response = await fetch(`/api/mypage/posts?page=${page}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (response.ok) {
-            const pageData = await response.json();
-            renderList(pageData, 'posts');
-        } else {
-            handleAuthError();
-        }
+        const response = await fetch(`/api/mypage/posts?page=${page}`, { headers: { 'Authorization': 'Bearer ' + token }});
+        if (response.ok) renderList(await response.json(), 'posts');
+        else handleAuthError();
     }
-
     async function fetchMyComments(page) {
-        const response = await fetch(`/api/mypage/comments?page=${page}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (response.ok) {
-            const pageData = await response.json();
-            renderList(pageData, 'comments');
-        } else {
-            handleAuthError();
-        }
+        const response = await fetch(`/api/mypage/comments?page=${page}`, { headers: { 'Authorization': 'Bearer ' + token }});
+        if (response.ok) renderList(await response.json(), 'comments');
+        else handleAuthError();
     }
-
     function renderList(pageData, type) {
         const listId = type === 'posts' ? 'my-posts-list' : 'my-comments-list';
         const paginationId = type === 'posts' ? 'posts-pagination' : 'comments-pagination';
@@ -98,24 +86,37 @@
             const link = document.createElement('a');
             link.className = 'list-group-item list-group-item-action';
             const date = new Date(item.createdAt).toLocaleString('ko-KR');
+
+            const profileImage = item.authorProfileImageUrl ? item.authorProfileImageUrl : '/images/default_profile.png';
+
             if (type === 'posts') {
                 link.href = `/post-detail?id=${item.id}`;
-                link.innerHTML = `<h5 class="mb-1">${item.title}</h5><small>작성일: ${date}</small>`;
+                link.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">${item.title}</h5>
+                        <small>${date}</small>
+                    </div>
+                    <div class="d-flex align-items-center mt-2">
+                        <img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;">
+                        <small>${item.authorNickname}</small>
+                    </div>`;
             } else {
                 link.href = `/post-detail?id=${item.postId}`;
-                link.innerHTML = `<p class="mb-1">${item.content}</p><small>작성일: ${date}</small>`;
+                link.innerHTML = `
+                    <p class="mb-1">${item.content}</p>
+                    <div class="d-flex align-items-center mt-2">
+                        <img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;">
+                        <small>${item.authorNickname} | ${date}</small>
+                    </div>`;
             }
             listContainer.appendChild(link);
         });
-
         renderPagination(pageData, paginationId, fetchFunction);
     }
-
     function renderPagination(pageData, containerId, fetchFunction) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
         if (pageData.totalPages <= 1) return;
-
         const ul = document.createElement('ul');
         ul.className = 'pagination justify-content-center';
         for (let i = 0; i < pageData.totalPages; i++) {
@@ -125,16 +126,12 @@
             a.className = 'page-link';
             a.href = '#';
             a.textContent = i + 1;
-            a.onclick = (e) => {
-                e.preventDefault();
-                fetchFunction(i);
-            };
+            a.onclick = (e) => { e.preventDefault(); fetchFunction(i); };
             li.appendChild(a);
             ul.appendChild(li);
         }
         container.appendChild(ul);
     }
-
     function handleAuthError() {
         alert('인증 정보가 유효하지 않습니다. 다시 로그인해주세요.');
         window.location.href = '/login';
