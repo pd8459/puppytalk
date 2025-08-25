@@ -2,6 +2,7 @@ package com.example.puppytalk.Post;
 
 import com.example.puppytalk.Comment.CommentResponseDto;
 import com.example.puppytalk.User.User;
+import com.example.puppytalk.image.Image;
 import com.example.puppytalk.like.CommentLikeRepository;
 import com.example.puppytalk.like.PostLikeRepository;
 import lombok.Getter;

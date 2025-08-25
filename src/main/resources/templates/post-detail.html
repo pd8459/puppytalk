@@ -16,7 +16,7 @@
                 <h2 id="post-title" class="card-title mb-0"></h2>
                 <div id="buttons-container"></div>
             </div>
-            <p id="post-meta" class="card-subtitle text-muted"></p>
+            <div id="post-meta" class="mt-2"></div>
             <hr>
             <div id="viewer"></div>
             <div class="mt-4 text-center">
@@ -106,7 +106,7 @@
                 const formData = new FormData();
                 formData.append('image', blob);
                 try {
-                    const response = await fetch('/api/images', { method: 'POST', headers: { 'Authorization': token }, body: formData });
+                    const response = await fetch('/api/images', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
                     if (!response.ok) throw new Error('이미지 업로드 실패');
                     const data = await response.json();
                     callback(data.url, 'image');
@@ -118,7 +118,6 @@
     window.addEventListener('DOMContentLoaded', () => {
         fetchPostDetail();
         fetchComments(0);
-
         document.getElementById('comment-form').addEventListener('submit', handleCommentSubmit);
         document.getElementById('save-post-btn').addEventListener('click', handlePostSave);
         document.getElementById('save-comment-btn').addEventListener('click', handleCommentSave);
@@ -127,14 +126,13 @@
 
     async function fetchPostDetail() {
         try {
-            const fetchOptions = token ? { headers: { 'Authorization': token } } : {};
+            const fetchOptions = token ? { headers: { 'Authorization': 'Bearer ' + token } } : {};
             const [postResponse, meResponse] = await Promise.all([
                 fetch(`/api/posts/${postId}`),
-                fetch('/api/users/me', fetchOptions)
+                fetch('/api/profile', fetchOptions)
             ]);
 
             if (!postResponse.ok) throw new Error('게시글을 불러올 수 없습니다.');
-
             const postData = await postResponse.json();
             postDataCache = postData;
 
@@ -143,8 +141,19 @@
             }
 
             document.getElementById('post-title').textContent = postData.title;
+
             const formattedDate = new Date(postData.createdAt).toLocaleString('ko-KR');
-            document.getElementById('post-meta').textContent = `작성자: ${postData.authorNickname} | 작성일: ${formattedDate}`;
+            const postMeta = document.getElementById('post-meta');
+            const postProfileImage = postData.authorProfileImageUrl ? postData.authorProfileImageUrl : '/images/default_profile.png';
+            postMeta.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <img src="${postProfileImage}" class="rounded-circle" width="32" height="32" style="object-fit: cover; margin-right: 10px;">
+                    <div>
+                        <strong>${postData.authorNickname}</strong>
+                        <div class="text-muted" style="font-size: 0.9em;">작성일: ${formattedDate}</div>
+                    </div>
+                </div>
+            `;
 
             document.getElementById('viewer').innerHTML = '';
             new toastui.Editor.factory({
@@ -183,7 +192,7 @@
 
     async function fetchComments(page = 0) {
         currentCommentPage = page;
-        const fetchOptions = token ? { headers: { 'Authorization': token } } : {};
+        const fetchOptions = token ? { headers: { 'Authorization': 'Bearer ' + token } } : {};
         try {
             const response = await fetch(`/api/posts/${postId}/comments?page=${page}&size=5`, fetchOptions);
             if (!response.ok) throw new Error('댓글을 불러올 수 없습니다.');
@@ -206,7 +215,8 @@
 
     function createCommentElement(comment, isChild = false) {
         const commentEl = document.createElement('div');
-        commentEl.className = 'card card-body mb-2';
+        const cardClass = isChild ? '' : 'card card-body mb-2';
+        commentEl.className = cardClass;
 
         const commentDate = new Date(comment.createdAt).toLocaleString('ko-KR');
         let buttonsHtml = '';
@@ -217,28 +227,32 @@
         `;
         }
         const likeBtnClass = comment.isLiked ? 'btn-danger' : 'btn-outline-danger';
+        const commentProfileImage = comment.authorProfileImageUrl ? comment.authorProfileImageUrl : '/images/default_profile.png';
 
         commentEl.innerHTML = `
-        <div class="comment-main-content">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <strong>${comment.authorNickname}</strong>
-                    <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
-                    <small class="text-muted">${commentDate}</small>
+        <div class="d-flex align-items-start">
+            <img src="${commentProfileImage}" class="rounded-circle" width="40" height="40" style="object-fit: cover; margin-right: 15px;">
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>${comment.authorNickname}</strong>
+                        <small class="text-muted ms-2">${commentDate}</small>
+                    </div>
+                    <div class="text-nowrap">
+                        ${buttonsHtml}
+                    </div>
                 </div>
-                <div class="text-nowrap">
-                    ${buttonsHtml}
+                <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
+                <div class="text-end">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="setReplyTarget(${comment.id}, '${comment.authorNickname}')">답글</button>
+                    <button class="btn ${likeBtnClass} btn-sm" onclick="toggleCommentLike(${comment.id})">
+                        ❤️ <span id="comment-like-count-${comment.id}">${comment.likeCount}</span>
+                    </button>
                 </div>
-            </div>
-            <div class="text-end mt-2">
-                <button class="btn btn-sm btn-outline-secondary" onclick="setReplyTarget(${comment.id}, '${comment.authorNickname}')">답글</button>
-                <button class="btn ${likeBtnClass} btn-sm" onclick="toggleCommentLike(${comment.id})">
-                    ❤️ <span id="comment-like-count-${comment.id}">${comment.likeCount}</span>
-                </button>
             </div>
         </div>
-        <div class="children-container" style="margin-left: 30px; margin-top: 10px;"></div>
-    `;
+        <div class="children-container" style="margin-left: 55px; margin-top: 10px;"></div>
+        `;
 
         if (comment.children && comment.children.length > 0) {
             const childrenContainer = commentEl.querySelector('.children-container');
@@ -246,7 +260,6 @@
                 childrenContainer.appendChild(createCommentElement(child, true));
             });
         }
-
         return commentEl;
     }
 
@@ -282,9 +295,8 @@
     }
 
     function cancelReply() {
-        const parentIdInput = document.getElementById('parent-comment-id');
+        document.getElementById('parent-comment-id').value = '';
         const commentContent = document.getElementById('comment-content');
-        parentIdInput.value = '';
         commentContent.value = '';
         commentContent.placeholder = '댓글을 입력하세요';
         document.getElementById('cancel-reply-btn').classList.add('d-none');
@@ -293,31 +305,17 @@
     async function handleCommentSubmit(event) {
         event.preventDefault();
         const content = document.getElementById('comment-content').value;
-        const parentIdInput = document.getElementById('parent-comment-id');
-        const parentId = parentIdInput.value ? parseInt(parentIdInput.value, 10) : null;
+        const parentId = document.getElementById('parent-comment-id').value || null;
         if (!token) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
-
-        let url = '';
-        let body = {};
-
-        if (parentId) {
-            url = `/api/comments/${parentId}/replies`;
-            body = { content: content };
-        } else {
-            url = `/api/posts/${postId}/comments`;
-            body = { content: content };
-        }
-
+        const url = parentId ? `/api/comments/${parentId}/replies` : `/api/posts/${postId}/comments`;
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': token },
-                body: JSON.stringify(body)
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ content })
             });
-            if (response.ok) {
-                cancelReply();
-                fetchComments(currentCommentPage);
-            } else { alert('댓글 작성에 실패했습니다.'); }
+            if (response.ok) { cancelReply(); fetchComments(currentCommentPage); }
+            else { alert('댓글 작성에 실패했습니다.'); }
         } catch (error) { alert('댓글 작성 중 오류가 발생했습니다.'); }
     }
 
@@ -327,7 +325,7 @@
         try {
             const response = await fetch(`/api/posts/${postId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({ title, content })
             });
             if (response.ok) {
@@ -343,7 +341,7 @@
         try {
             const response = await fetch(`/api/comments/${commentId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({ content })
             });
             if (response.ok) {
@@ -356,7 +354,7 @@
     async function togglePostLike() {
         if (!token) { alert('로그인이 필요합니다.'); return; }
         try {
-            const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', headers: { 'Authorization': token } });
+            const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
             if (response.ok) { fetchPostDetail(); }
             else { alert('좋아요 처리에 실패했습니다.'); }
         } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
@@ -365,7 +363,7 @@
     async function toggleCommentLike(commentId) {
         if (!token) { alert('로그인이 필요합니다.'); return; }
         try {
-            const response = await fetch(`/api/comments/${commentId}/like`, { method: 'POST', headers: { 'Authorization': token } });
+            const response = await fetch(`/api/comments/${commentId}/like`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
             if (response.ok) { fetchComments(currentCommentPage); }
             else { alert('좋아요 처리에 실패했습니다.'); }
         } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
@@ -381,7 +379,7 @@
     async function deletePost() {
         if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
         try {
-            const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE', headers: { 'Authorization': token } });
+            const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
             if (response.ok) {
                 alert('게시글이 삭제되었습니다.');
                 window.location.href = '/main';
@@ -398,7 +396,7 @@
     async function deleteComment(commentId) {
         if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
         try {
-            const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE', headers: { 'Authorization': token } });
+            const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
             if (response.ok) { fetchComments(currentCommentPage); }
             else { alert('댓글 삭제에 실패했습니다.'); }
         } catch (error) { alert('댓글 삭제 중 오류가 발생했습니다.'); }

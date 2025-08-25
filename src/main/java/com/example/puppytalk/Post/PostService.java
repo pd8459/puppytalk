@@ -2,7 +2,8 @@ package com.example.puppytalk.Post;
 
 import com.example.puppytalk.FileUploadService;
 import com.example.puppytalk.User.User;
-import com.example.puppytalk.User.UserService;
+import com.example.puppytalk.image.Image;
+import com.example.puppytalk.image.ImageRepository;
 import com.example.puppytalk.like.CommentLikeRepository;
 import com.example.puppytalk.like.PostLikeRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,9 +31,11 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostDetailResponseDto getPost(Long postId, User user) {
-        Post post = findPost(postId);
-        return new PostDetailResponseDto(post, user, postLikeRepository , commentLikeRepository);
+    public PostResponseDto getPost(Long id) {
+        Post post = postRepository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("게시글을 찾을 수 없습니다.")
+        );
+        return new PostResponseDto(post);
     }
 
     @Transactional

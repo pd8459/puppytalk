@@ -46,12 +46,9 @@ public class PostController {
         return postService.getAllPosts(pageable);
     }
 
-    @GetMapping("/{postId}")
-    public PostDetailResponseDto getPost(
-            @PathVariable Long postId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        User user = (userDetails != null) ?userDetails.getUser() : null;
-        return postService.getPost(postId, user);
+    @GetMapping("/{id}")
+    public PostResponseDto getPost(@PathVariable Long id) {
+        return postService.getPost(id);
     }
 
     @DeleteMapping("/{postId}")

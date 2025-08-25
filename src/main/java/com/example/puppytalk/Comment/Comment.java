@@ -41,7 +41,7 @@ public class Comment extends Timestamped {
     private Comment parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> children;
+    private List<Comment> children = new ArrayList<>();
 
     public Comment(String content, User user, Post post, Comment parent) {
         this.content = content;
