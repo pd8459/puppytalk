@@ -20,8 +20,7 @@
             <hr>
             <div id="viewer"></div>
             <div class="mt-4 text-center">
-                <button class="btn btn-outline-danger" id="like-btn">❤️ 좋아요</button>
-                <span id="like-count" class="ms-2"></span>
+                <button class="btn btn-outline-danger" id="like-btn"></button>
             </div>
         </div>
     </div>
@@ -128,7 +127,7 @@
         try {
             const fetchOptions = token ? { headers: { 'Authorization': 'Bearer ' + token } } : {};
             const [postResponse, meResponse] = await Promise.all([
-                fetch(`/api/posts/${postId}`),
+                fetch(`/api/posts/${postId}`, fetchOptions),
                 fetch('/api/profile', fetchOptions)
             ]);
 
@@ -176,12 +175,12 @@
             }
 
             const likeButton = document.getElementById('like-btn');
-            const likeCountSpan = document.getElementById('like-count');
-            likeCountSpan.textContent = postData.likeCount;
             if (postData.isLiked) {
                 likeButton.classList.replace('btn-outline-danger', 'btn-danger');
+                likeButton.innerHTML = `❤️ Liked <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
             } else {
                 likeButton.classList.replace('btn-danger', 'btn-outline-danger');
+                likeButton.innerHTML = `♡ Like <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
             }
             likeButton.onclick = togglePostLike;
         } catch (error) {
@@ -226,7 +225,10 @@
             <button class="btn btn-danger btn-sm ms-1" onclick="deleteComment(${comment.id})">삭제</button>
         `;
         }
+
         const likeBtnClass = comment.isLiked ? 'btn-danger' : 'btn-outline-danger';
+        const likeIcon = comment.isLiked ? '❤️' : '♡';
+        const likeText = comment.isLiked ? 'Liked' : 'Like';
         const commentProfileImage = comment.authorProfileImageUrl ? comment.authorProfileImageUrl : '/images/default_profile.png';
 
         commentEl.innerHTML = `
@@ -238,15 +240,13 @@
                         <strong>${comment.authorNickname}</strong>
                         <small class="text-muted ms-2">${commentDate}</small>
                     </div>
-                    <div class="text-nowrap">
-                        ${buttonsHtml}
-                    </div>
+                    <div class="text-nowrap">${buttonsHtml}</div>
                 </div>
                 <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
                 <div class="text-end">
                     <button class="btn btn-sm btn-outline-secondary" onclick="setReplyTarget(${comment.id}, '${comment.authorNickname}')">답글</button>
                     <button class="btn ${likeBtnClass} btn-sm" onclick="toggleCommentLike(${comment.id})">
-                        ❤️ <span id="comment-like-count-${comment.id}">${comment.likeCount}</span>
+                        ${likeIcon} ${likeText} <span class="badge bg-light text-dark ms-1">${comment.likeCount}</span>
                     </button>
                 </div>
             </div>
