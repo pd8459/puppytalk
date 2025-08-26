@@ -4,6 +4,7 @@ import com.example.puppytalk.Comment.Comment;
 import com.example.puppytalk.Timestamped;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.image.Image;
+import com.example.puppytalk.like.PostLike;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,6 +38,9 @@ public class Post extends Timestamped {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> likes = new ArrayList<>();
 
     public Post(String title, String content, User user) {
         this.title = title;

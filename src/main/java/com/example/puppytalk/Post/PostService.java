@@ -31,11 +31,19 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponseDto getPost(Long id) {
+    public PostResponseDto getPost(Long id, User currentUser) {
         Post post = postRepository.findById(id).orElseThrow(
                 () -> new IllegalArgumentException("게시글을 찾을 수 없습니다.")
         );
-        return new PostResponseDto(post);
+
+        long likeCount = post.getLikes().size();
+        boolean isLiked = false;
+        if (currentUser != null) {
+            isLiked = post.getLikes().stream()
+                    .anyMatch(postLike -> postLike.getUser().getId().equals(currentUser.getId()));
+        }
+
+        return new PostResponseDto(post, likeCount, isLiked);
     }
 
     @Transactional

@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <title>PuppyTalk - 메인</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .post-thumbnail {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+        }
+        .post-card-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+    </style>
 </head>
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
@@ -34,15 +47,15 @@
 
     window.addEventListener('DOMContentLoaded', () => fetchPosts(0));
 
+    function extractFirstImageFromContent(content) {
+        const regex = /!\[.*?\]\((.*?)\)/;
+        const match = content.match(regex);
+        return match ? match[1] : null;
+    }
+
     async function fetchPosts(page, keyword = '') {
         currentKeyword = keyword;
-        let url = '';
-
-        if (keyword) {
-            url = `/api/posts/search?keyword=${keyword}&page=${page}&size=10`;
-        } else {
-            url = `/api/posts?page=${page}&size=10`;
-        }
+        let url = keyword ? `/api/posts/search?keyword=${keyword}&page=${page}&size=10` : `/api/posts?page=${page}&size=10`;
 
         try {
             const response = await fetch(url);
@@ -59,20 +72,41 @@
                     const postCard = document.createElement('div');
                     postCard.className = 'card mb-3';
                     const formattedDate = new Date(post.createdAt).toLocaleString('ko-KR');
+
+                    // imageUrl이 없으면 content에서 첫 번째 이미지 추출
+                    const imageSrc = post.imageUrl || extractFirstImageFromContent(post.content);
+                    const thumbnailHtml = imageSrc
+                        ? `<div class="col-md-2 d-flex align-items-center justify-content-center p-2">
+                           <img src="${imageSrc}" class="img-fluid rounded post-thumbnail" alt="썸네일">
+                       </div>`
+                        : '';
+
+                    const textColClass = imageSrc ? 'col-md-10' : 'col-md-12';
+
                     postCard.innerHTML = `
-                        <div class="card-body">
-                            <h5 class="card-title"><a href="/post-detail?id=${post.id}" class="text-decoration-none text-dark">${post.title}</a></h5>
-                            <p class="card-subtitle text-muted">
-                                작성자: ${post.authorNickname} | 작성일: ${formattedDate}
-                            </p>
+                    <div class="row g-0">
+                        ${thumbnailHtml}
+                        <div class="${textColClass}">
+                            <div class="card-body post-card-body">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <a href="/post-detail?id=${post.id}" class="text-decoration-none text-dark">${post.title}</a>
+                                    </h5>
+                                </div>
+                                <p class="card-text mb-0 mt-2">
+                                    <small class="text-muted">작성자: ${post.authorNickname} | 작성일: ${formattedDate}</small>
+                                </p>
+                            </div>
                         </div>
-                    `;
+                    </div>
+                `;
                     postListContainer.appendChild(postCard);
                 });
             }
             renderPagination(pageData);
         } catch (error) {
             console.error('Error:', error);
+            document.getElementById('post-list').innerHTML = '<p class="text-center text-danger">게시글을 불러오는 중 오류가 발생했습니다.</p>';
         }
     }
 
@@ -82,10 +116,19 @@
         const currentPage = pageData.number;
         const totalPages = pageData.totalPages;
 
+        if (totalPages <= 1) return;
+
         const createPageLink = (page, text, isDisabled = false, isActive = false) => {
             const li = document.createElement('li');
             li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault(); fetchPosts(${page}, currentKeyword)">${text}</a>`;
+            const link = document.createElement('a');
+            link.className = 'page-link';
+            link.href = '#';
+            link.textContent = text;
+            if (!isDisabled) {
+                link.onclick = (e) => { e.preventDefault(); fetchPosts(page, currentKeyword); };
+            }
+            li.appendChild(link);
             return li;
         };
 
@@ -100,13 +143,6 @@
         event.preventDefault();
         const keyword = document.getElementById('search-keyword').value;
         fetchPosts(0, keyword);
-    });
-
-    document.getElementById('logout-btn').addEventListener('click', function(event) {
-        event.preventDefault();
-        localStorage.removeItem('jwt');
-        alert('로그아웃 되었습니다.');
-        window.location.href = '/login';
     });
 </script>
 </body>

@@ -1,44 +1,44 @@
 package com.example.puppytalk.ai;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
 public class AIController {
 
-    private final AIService aiService;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    private final String aiServerUrl = "http://127.0.0.1:8000/predict/dog-breed";
 
     @PostMapping("/api/ai/classify-dog")
-    public ResponseEntity<String> classifyDogBreed(@RequestParam("image") MultipartFile image) {
-        if(image.isEmpty()) {
-            return ResponseEntity.badRequest().body("이미지 파일이 비어있습니다.");
-        }
-        try{
-            String predictedBreed = aiService.classifyDogBreed(image);
-            return ResponseEntity.ok(predictedBreed);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("이미지 처리 중 오류가 발생했습니다.");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("AI서버와 통신하는데 실패했습니다.");
-        }
-    }
+    @ResponseBody
+    public ResponseEntity<String> classifyDog(
+            @RequestParam("image") MultipartFile image) throws IOException {
 
-    @PostMapping("/api/ai/chat")
-    public ResponseEntity<String> getChatAnswer(@RequestBody ChatRequestDto request) {
-        try {
-            String answer = aiService.getChatbotResponse(request.getQuestion());
-            return ResponseEntity.ok(answer);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("AI 챗봇 서버와 통신하는 데 실패했습니다.");
-        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+        ByteArrayResource resource = new ByteArrayResource(image.getBytes()) {
+            @Override
+            public String getFilename() {
+                return image.getOriginalFilename();
+            }
+        };
+        body.add("file", resource);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+        return restTemplate.postForEntity(aiServerUrl, requestEntity, String.class);
     }
 }

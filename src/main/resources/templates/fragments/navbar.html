@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" th:fragment="navbar">
     <div class="container-fluid">
         <a class="navbar-brand" th:href="@{/main}">🐶 PuppyTalk</a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
@@ -23,9 +22,35 @@
             </ul>
         </div>
 
-        <a class="btn btn-outline-light me-2" th:href="@{/mypage}">마이페이지</a>
-        <button class="btn btn-outline-light" id="logout-btn">로그아웃</button>
+        <div id="auth-buttons" class="d-flex align-items-center"></div>
     </div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const authButtons = document.getElementById('auth-buttons');
+            const token = localStorage.getItem('jwt');
+
+            if (token) {
+                authButtons.innerHTML = `
+                <a class="btn btn-outline-light me-2" href="/mypage">마이페이지</a>
+                <a class="btn btn-outline-light me-2" href="/profile/edit">프로필 수정</a>
+                <button class="btn btn-light" id="logout-btn">로그아웃</button>
+            `;
+
+                document.getElementById('logout-btn').addEventListener('click', () => {
+                    localStorage.removeItem('jwt');
+                    alert('로그아웃 되었습니다.');
+                    window.location.reload();
+                });
+            } else {
+                authButtons.innerHTML = `<a class="btn btn-light" href="/login">로그인</a>`;
+            }
+        });
+
+        /*]]>*/
+    </script>
 </nav>
 </body>
 </html>
