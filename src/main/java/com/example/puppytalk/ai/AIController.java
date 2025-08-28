@@ -1,6 +1,7 @@
 package com.example.puppytalk.ai;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
@@ -18,7 +19,8 @@ public class AIController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private final String aiServerUrl = "http://127.0.0.1:8000/predict/dog-breed";
+    @Value("${ai.server.url}")
+    private String aiServerUrl;
 
     @PostMapping("/api/ai/classify-dog")
     @ResponseBody
