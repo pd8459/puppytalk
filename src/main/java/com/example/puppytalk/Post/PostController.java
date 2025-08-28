@@ -35,15 +35,11 @@ public class PostController {
         return ResponseEntity.status(HttpStatus.CREATED).body("게시글이 성공적으로 작성되었습니다.");
     }
 
-
     @GetMapping
-    public Page<PostResponseDto> getAllPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return postService.getAllPosts(pageable);
+    public Page<PostResponseDto> getPosts(
+            @RequestParam(required = false) PostCategory category,
+            Pageable pageable) {
+        return postService.getPosts(category, pageable);
     }
 
     @GetMapping("/{id}")
@@ -88,11 +84,8 @@ public class PostController {
     @GetMapping("/search")
     public Page<PostResponseDto> searchPosts(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return postService.searchPosts(keyword, pageable);
+            @RequestParam(required = false) PostCategory category,
+            Pageable pageable) {
+        return postService.searchPosts(keyword, category, pageable);
     }
 }

@@ -16,6 +16,16 @@
             <h5 class="card-title">새 글 작성</h5>
             <form id="post-form">
                 <div class="mb-3">
+                    <label for="post-category" class="form-label">카테고리</label>
+                    <select class="form-select" id="post-category" required>
+                        <option value="" disabled selected>카테고리를 선택하세요</option>
+                        <option value="FREE_BOARD">자유게시판</option>
+                        <option value="TRAINING_TIPS">훈련 꿀팁</option>
+                        <option value="HEALTH_INFO">건강 정보</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
                     <label for="post-title" class="form-label">제목</label>
                     <input type="text" class="form-control" id="post-title" required>
                 </div>
@@ -45,9 +55,7 @@
                 try {
                     const response = await fetch('/api/images', {
                         method: 'POST',
-                        headers: {
-                            'Authorization': 'Bearer ' + token
-                        },
+                        headers: { 'Authorization': 'Bearer ' + token },
                         body: formData,
                     });
                     if (!response.ok) throw new Error('이미지 업로드 실패');
@@ -64,12 +72,19 @@
         event.preventDefault();
         const title = document.getElementById('post-title').value;
         const content = editor.getMarkdown();
+        const category = document.getElementById('post-category').value;
         const token = localStorage.getItem('jwt');
         const messageDiv = document.getElementById('post-message');
+
         if (!token) {
             messageDiv.innerHTML = '<div class="alert alert-danger">로그인이 필요합니다.</div>';
             return;
         }
+        if (!category) {
+            alert('카테고리를 선택해주세요.');
+            return;
+        }
+
         try {
             const response = await fetch('/api/posts', {
                 method: 'POST',
@@ -77,8 +92,9 @@
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + token
                 },
-                body: JSON.stringify({ title, content })
+                body: JSON.stringify({ title, content, category })
             });
+
             if (response.ok) {
                 alert('게시글이 성공적으로 작성되었습니다.');
                 window.location.href = '/main';

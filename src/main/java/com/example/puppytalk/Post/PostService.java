@@ -25,8 +25,13 @@ public class PostService {
     private final CommentLikeRepository commentLikeRepository;
 
     @Transactional(readOnly = true)
-    public Page<PostResponseDto> getAllPosts(Pageable pageable) {
-        Page<Post> posts = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+    public Page<PostResponseDto> getPosts(PostCategory category, Pageable pageable) {
+        Page<Post> posts;
+        if (category != null) {
+            posts = postRepository.findByCategory(category, pageable);
+        } else {
+            posts = postRepository.findAll(pageable);
+        }
         return posts.map(PostResponseDto::new);
     }
 
@@ -47,9 +52,13 @@ public class PostService {
     }
 
     @Transactional
-    public void createPost(PostRequestDto requestDto, User user) {
-        Post post = new Post(requestDto.getTitle(), requestDto.getContent(), user);
-        postRepository.save(post);
+    public Post createPost(PostRequestDto requestDto, User user) {
+        Post post = new Post();
+        post.setTitle(requestDto.getTitle());
+        post.setContent(requestDto.getContent());
+        post.setCategory(requestDto.getCategory());
+        post.setUser(user);
+        return postRepository.save(post);
     }
 
     @Transactional
@@ -92,8 +101,13 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostResponseDto> searchPosts(String keyword, Pageable pageable) {
-        Page<Post> posts = postRepository.findByTitleContaining(keyword, pageable);
+    public Page<PostResponseDto> searchPosts(String keyword, PostCategory category, Pageable pageable) {
+        Page<Post> posts;
+        if (category != null) {
+            posts = postRepository.findByTitleContainingAndCategory(keyword, category, pageable);
+        } else {
+            posts = postRepository.findByTitleContaining(keyword, pageable);
+        }
         return posts.map(PostResponseDto::new);
     }
 }

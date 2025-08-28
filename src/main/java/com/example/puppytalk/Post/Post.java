@@ -51,4 +51,8 @@ public class Post extends Timestamped {
     public void addImage(Image image) {
         this.images.add(image);
     }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PostCategory category;
 }

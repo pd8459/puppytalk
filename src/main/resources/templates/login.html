@@ -12,9 +12,12 @@
         input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; background-color: #28a745; color: white; font-size: 1rem; cursor: pointer; }
         button:hover { background-color: #218838; }
-        #message { margin-top: 1rem; text-align: center; font-weight: bold; }
+        #message { margin-top: 1rem; text-align: center; font-weight: bold; min-height: 1.2em; }
         .success { color: green; }
         .error { color: red; }
+        .signup-link { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #555; }
+        .signup-link a { color: #007bff; text-decoration: none; font-weight: bold; }
+        .signup-link a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -33,6 +36,9 @@
         <button type="submit">로그인</button>
     </form>
     <div id="message"></div>
+    <div class="signup-link">
+        계정이 없으신가요? <a href="/signup">회원가입</a>
+    </div>
 </div>
 
 <script>
@@ -56,23 +62,18 @@
 
             if (response.ok) {
                 const token = response.headers.get('Authorization');
-
                 if (token) {
-
                     localStorage.setItem('jwt', token);
-
                     messageDiv.textContent = '로그인에 성공했습니다! 잠시 후 이동합니다.';
                     messageDiv.className = 'success';
-
                     setTimeout(() => {
-                        window.location.href = '/main'
+                        const redirectURL = new URLSearchParams(window.location.search).get('redirectURL');
+                        window.location.href = redirectURL || '/main';
                     }, 1000);
-
                 } else {
                     messageDiv.textContent = '토큰을 받지 못했습니다.';
                     messageDiv.className = 'error';
                 }
-
             } else {
                 const errorText = await response.text();
                 messageDiv.textContent = errorText || '로그인에 실패했습니다.';

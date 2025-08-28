@@ -18,8 +18,9 @@ public class PostResponseDto {
     private String imageUrl;
     private long likeCount;
     private boolean isLiked;
+    private PostCategory category;
+    private String categoryDescription;
 
-    // 1. 게시글 '목록'을 위한 생성자
     public PostResponseDto(Post post) {
         this.id = post.getId();
         this.title = post.getTitle();
@@ -39,12 +40,16 @@ public class PostResponseDto {
         if (images != null && !images.isEmpty()) {
             this.imageUrl = images.get(0).getImageUrl();
         }
+        this.category = post.getCategory();
+        if (post.getCategory() != null) {
+            this.categoryDescription = post.getCategory().getDescription();
+        }
     }
 
-    // 2. 게시글 '상세' 조회를 위한 생성자 (좋아요 정보 추가)
     public PostResponseDto(Post post, long likeCount, boolean isLiked) {
-        this(post); // 기본 생성자를 먼저 호출해서 중복 코드 제거
+        this(post);
         this.likeCount = likeCount;
         this.isLiked = isLiked;
+
     }
 }
