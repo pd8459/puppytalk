@@ -12,7 +12,7 @@
         input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; cursor: pointer; }
         button:hover { background-color: #0056b3; }
-        #message { margin-top: 1rem; text-align: center; font-weight: bold; }
+        #message { margin-top: 1rem; text-align: center; font-weight: bold; min-height: 1.2em;}
         .success { color: green; }
         .error { color: red; }
     </style>
@@ -65,9 +65,11 @@
             });
 
             if (response.ok) {
-                const resultText = await response.text();
-                messageDiv.textContent = resultText;
+                messageDiv.textContent = '회원가입에 성공했습니다! 잠시 후 메인 페이지로 이동합니다.';
                 messageDiv.className = 'success';
+                setTimeout(() => {
+                    window.location.href = '/main';
+                }, 2000);
             } else {
                 const errorData = await response.json();
                 messageDiv.textContent = errorData.message || '회원가입에 실패했습니다.';

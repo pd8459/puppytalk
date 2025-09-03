@@ -13,6 +13,7 @@ public class CommentResponseDto {
     private String content;
     private String authorNickname;
     private String authorProfileImageUrl;
+    private String authorUsername;
     private LocalDateTime createdAt;
     private long likeCount;
     private boolean liked;
@@ -24,6 +25,7 @@ public class CommentResponseDto {
         this.content = comment.getContent();
         this.authorNickname = comment.getUser().getNickname();
         this.authorProfileImageUrl = comment.getUser().getProfileImageUrl();
+        this.authorUsername = comment.getUser().getUsername();
         this.createdAt = comment.getCreatedAt();
         this.likeCount = likeCount;
         this.liked = liked;

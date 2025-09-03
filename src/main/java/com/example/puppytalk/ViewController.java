@@ -55,5 +55,13 @@ public class ViewController {
     @GetMapping("/profile/edit")
     public String profileEditPage() { return "profile-edit";}
 
+    @GetMapping("/messages")
+    public String messagesPage() {
+        return "messages";
+    }
 
+    @GetMapping("/conversation")
+    public String conversationPage() {
+        return "conversation";
+    }
 }

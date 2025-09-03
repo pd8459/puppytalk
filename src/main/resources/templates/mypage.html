@@ -21,6 +21,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments-tab-pane" type="button" role="tab">내가 쓴 댓글</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages-tab-pane" type="button" role="tab">메시지</button>
+        </li>
     </ul>
 
     <div class="tab-content" id="myTabContent">
@@ -31,6 +34,9 @@
         <div class="tab-pane fade" id="comments-tab-pane" role="tabpanel">
             <div id="my-comments-list" class="list-group mt-3"></div>
             <nav id="comments-pagination" class="mt-3"></nav>
+        </div>
+        <div class="tab-pane fade" id="messages-tab-pane" role="tabpanel">
+            <div id="my-conversations-list" class="list-group mt-3"></div>
         </div>
     </div>
 </div>
@@ -45,7 +51,6 @@
             window.location.href = '/login';
             return;
         }
-
         try {
             const res = await fetch('/api/profile', {
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -58,12 +63,12 @@
             window.location.href = '/login';
             return;
         }
-
         fetchMyPosts(0);
     });
 
     document.getElementById('posts-tab').addEventListener('click', () => fetchMyPosts(0));
     document.getElementById('comments-tab').addEventListener('click', () => fetchMyComments(0));
+    document.getElementById('messages-tab').addEventListener('click', () => fetchMyConversations());
 
     async function fetchMyPosts(page) {
         const response = await fetch(`/api/mypage/posts?page=${page}`, { headers: { 'Authorization': 'Bearer ' + token }});
@@ -75,44 +80,63 @@
         if (response.ok) renderList(await response.json(), 'comments');
         else handleAuthError();
     }
+
+    async function fetchMyConversations() {
+        const listContainer = document.getElementById('my-conversations-list');
+        listContainer.innerHTML = '<p class="text-center">쪽지 목록을 불러오는 중...</p>';
+        try {
+            const response = await fetch('/api/messages', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!response.ok) throw new Error('쪽지 목록을 불러오지 못했습니다.');
+            const conversations = await response.json();
+            renderConversations(conversations);
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+            listContainer.innerHTML = `<p class="text-center text-danger">${error.message}</p>`;
+        }
+    }
+
     function renderList(pageData, type) {
         const listId = type === 'posts' ? 'my-posts-list' : 'my-comments-list';
         const paginationId = type === 'posts' ? 'posts-pagination' : 'comments-pagination';
         const fetchFunction = type === 'posts' ? fetchMyPosts : fetchMyComments;
         const listContainer = document.getElementById(listId);
         listContainer.innerHTML = '';
-
         pageData.content.forEach(item => {
             const link = document.createElement('a');
             link.className = 'list-group-item list-group-item-action';
             const date = new Date(item.createdAt).toLocaleString('ko-KR');
-
             const profileImage = item.authorProfileImageUrl ? item.authorProfileImageUrl : '/images/default_profile.png';
-
             if (type === 'posts') {
                 link.href = `/post-detail?id=${item.id}`;
-                link.innerHTML = `
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">${item.title}</h5>
-                        <small>${date}</small>
-                    </div>
-                    <div class="d-flex align-items-center mt-2">
-                        <img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;">
-                        <small>${item.authorNickname}</small>
-                    </div>`;
+                link.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1">${item.title}</h5><small>${date}</small></div><div class="d-flex align-items-center mt-2"><img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;"><small>${item.authorNickname}</small></div>`;
             } else {
                 link.href = `/post-detail?id=${item.postId}`;
-                link.innerHTML = `
-                    <p class="mb-1">${item.content}</p>
-                    <div class="d-flex align-items-center mt-2">
-                        <img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;">
-                        <small>${item.authorNickname} | ${date}</small>
-                    </div>`;
+                link.innerHTML = `<p class="mb-1">${item.content}</p><div class="d-flex align-items-center mt-2"><img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;"><small>${item.authorNickname} | ${date}</small></div>`;
             }
             listContainer.appendChild(link);
         });
         renderPagination(pageData, paginationId, fetchFunction);
     }
+
+    function renderConversations(conversations) {
+        const listContainer = document.getElementById('my-conversations-list');
+        listContainer.innerHTML = '';
+        if (conversations.length === 0) {
+            listContainer.innerHTML = '<p class="text-center">아직 대화가 없습니다.</p>';
+        } else {
+            conversations.forEach(convo => {
+                const link = document.createElement('a');
+                link.href = `/conversation?id=${convo.conversationId}`;
+                link.className = 'list-group-item list-group-item-action';
+                const profileImg = convo.otherParticipantProfileImageUrl || '/images/default_profile.png';
+                const lastMsg = convo.lastMessage || '메시지가 없습니다.';
+                const lastMsgDate = convo.lastMessageCreatedAt ? new Date(convo.lastMessageCreatedAt).toLocaleString('ko-KR') : '';
+                link.innerHTML = `<div class="d-flex align-items-center"><img src="${profileImg}" alt="profile" class="rounded-circle me-3" style="width:50px; height:50px; object-fit:cover;"><div class="flex-grow-1" style="min-width: 0;"><div class="d-flex w-100 justify-content-between"><h5 class="mb-1">${convo.otherParticipantNickname}</h5><small class="text-muted">${lastMsgDate}</small></div><p class="mb-1 text-muted text-truncate">${lastMsg}</p></div></div>`;
+                listContainer.appendChild(link);
+            });
+        }
+    }
+
     function renderPagination(pageData, containerId, fetchFunction) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
