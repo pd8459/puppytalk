@@ -20,11 +20,13 @@ public class PostResponseDto {
     private boolean isLiked;
     private PostCategory category;
     private String categoryDescription;
+    private String authorUsername;
 
     public PostResponseDto(Post post) {
         this.id = post.getId();
         this.title = post.getTitle();
         this.content = post.getContent();
+        this.authorUsername = post.getUser().getUsername();
 
         User author = post.getUser();
         if (author.isDeleted()) {
