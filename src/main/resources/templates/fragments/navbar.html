@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" th:fragment="navbar">
@@ -19,40 +19,87 @@
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/chatbot}">AI 챗봇</a>
                 </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" th:href="@{/messages}">메시지</a>
+                <li class="nav-item">
+                    <a class="nav-link" id="nav-messages-link" href="/messages" style="display: none;">메시지</a>
                 </li>
             </ul>
         </div>
 
-        <div id="auth-buttons" class="d-flex align-items-center"></div>
+        <div class="d-flex align-items-center">
+            <div id="anonymous-nav">
+                <a class="btn btn-outline-light me-2" href="/login">로그인</a>
+                <a class="btn btn-light" href="/signup">회원가입</a>
+            </div>
+
+            <div id="authenticated-nav" class="d-flex align-items-center" style="display: none;">
+                <a class="nav-link text-light me-3 position-relative" href="/notifications">
+                    알림
+                    <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                        <span id="notification-count"></span>
+                    </span>
+                </a>
+
+                <img id="navbar-profile-image" src="/images/default_profile.png" class="rounded-circle" width="32" height="32" style="object-fit: cover; margin-right: 8px;">
+                <span id="navbar-nickname" class="navbar-text me-3"></span>
+                <a class="btn btn-outline-light me-2" href="/profile-edit">프로필 수정</a>
+                <button class="btn btn-light" id="logout-btn">로그아웃</button>
+            </div>
+        </div>
     </div>
 
-    <script th:inline="javascript">
-        /*<![CDATA[*/
+    <script>
+        const token = localStorage.getItem('jwt');
+        const anonymousNav = document.getElementById('anonymous-nav');
+        const authenticatedNav = document.getElementById('authenticated-nav');
+        const messagesLink = document.getElementById('nav-messages-link');
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const authButtons = document.getElementById('auth-buttons');
-            const token = localStorage.getItem('jwt');
+        if (token) {
+            if (anonymousNav) anonymousNav.remove();
 
-            if (token) {
-                authButtons.innerHTML = `
-                <a class="btn btn-outline-light me-2" href="/mypage">마이페이지</a>
-                <a class="btn btn-outline-light me-2" href="/profile/edit">프로필 수정</a>
-                <button class="btn btn-light" id="logout-btn">로그아웃</button>
-            `;
+            authenticatedNav.style.display = 'flex';
+            messagesLink.style.display = 'block';
 
-                document.getElementById('logout-btn').addEventListener('click', () => {
+            fetch('/api/profile', { headers: { 'Authorization': 'Bearer ' + token }})
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to fetch profile');
+                    return res.json();
+                })
+                .then(user => {
+                    document.getElementById('navbar-nickname').textContent = `${user.nickname}님`;
+                    if (user.profileImageUrl) {
+                        document.getElementById('navbar-profile-image').src = user.profileImageUrl;
+                    }
+                }).catch(error => {
+                console.error("Error fetching profile:", error);
+                localStorage.removeItem('jwt');
+                window.location.reload();
+            });
+
+            fetch('/api/notifications/unread-count', { headers: { 'Authorization': 'Bearer ' + token }})
+                .then(res => res.json())
+                .then(count => {
+                    const badge = document.getElementById('notification-badge');
+                    const countSpan = document.getElementById('notification-count');
+                    if (count > 0) {
+                        countSpan.textContent = count > 9 ? '9+' : count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }).catch(console.error);
+
+            const logoutButton = document.getElementById('logout-btn');
+            if(logoutButton) {
+                logoutButton.addEventListener('click', () => {
                     localStorage.removeItem('jwt');
                     alert('로그아웃 되었습니다.');
                     window.location.reload();
                 });
-            } else {
-                authButtons.innerHTML = `<a class="btn btn-light" href="/login">로그인</a>`;
             }
-        });
 
-        /*]]>*/
+        } else {
+            if (authenticatedNav) authenticatedNav.remove();
+        }
     </script>
 </nav>
 </body>

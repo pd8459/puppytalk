@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-
 @RestController
 @RequiredArgsConstructor
 public class CommentController {
@@ -21,23 +20,23 @@ public class CommentController {
     private final LikeService likeService;
 
     @PostMapping("/api/posts/{postId}/comments")
-    public ResponseEntity<String> createComment(
+    public ResponseEntity<CommentResponseDto> createComment(
             @PathVariable Long postId,
-            @RequestBody CommentRequestDto requestDto,
+            @RequestBody CommentCreateRequestDto requestDto,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        commentService.createComment(postId, requestDto, userDetails.getUser());
-        return ResponseEntity.status(HttpStatus.CREATED).body("댓글이 성공적으로 작성되었습니다.");
+        CommentResponseDto responseDto = commentService.createComment(postId, requestDto, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     @PostMapping("/api/comments/{parentId}/replies")
-    public ResponseEntity<String> createReply(
+    public ResponseEntity<CommentResponseDto> createReply(
             @PathVariable Long parentId,
-            @RequestBody CommentRequestDto requestDto, // content만 있는 DTO 사용
+            @RequestBody CommentCreateRequestDto requestDto,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        commentService.createReply(parentId, requestDto, userDetails.getUser());
-        return ResponseEntity.status(HttpStatus.CREATED).body("답글이 성공적으로 작성되었습니다.");
+        CommentResponseDto responseDto = commentService.createReply(parentId, requestDto, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     @PutMapping("/api/comments/{commentId}")

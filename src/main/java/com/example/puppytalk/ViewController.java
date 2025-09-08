@@ -64,4 +64,9 @@ public class ViewController {
     public String conversationPage() {
         return "conversation";
     }
+
+    @GetMapping("/notifications")
+    public String notificationsPage() {
+        return "notifications";
+    }
 }
