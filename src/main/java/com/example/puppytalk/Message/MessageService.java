@@ -1,5 +1,6 @@
 package com.example.puppytalk.Message;
 
+import com.example.puppytalk.Notification.NotificationService;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public MessageResponseDto sendMessage(User sender, String receiverUsername, MessageSendRequestDto requestDto) {
@@ -31,10 +33,11 @@ public class MessageService {
                 });
 
         Message message = new Message(conversation, sender, receiver, requestDto.getContent());
-        messageRepository.save(message);
+        Message savedMessage = messageRepository.save(message);
 
-        return new MessageResponseDto(message);
+        notificationService.sendNewMessageNotification(savedMessage);
 
+        return new MessageResponseDto(savedMessage);
     }
 
     @Transactional(readOnly = true)

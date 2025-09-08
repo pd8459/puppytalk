@@ -1,5 +1,6 @@
 package com.example.puppytalk.Comment;
 
+import com.example.puppytalk.Notification.NotificationService;
 import com.example.puppytalk.Post.Post;
 import com.example.puppytalk.Post.PostRepository;
 import com.example.puppytalk.User.User;
@@ -20,24 +21,31 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final NotificationService notificationService;
 
     @Transactional
-    public void createComment(Long postId, CommentRequestDto requestDto, User user) {
-        Post post = postRepository.findById(postId).orElseThrow(() ->
-                new IllegalArgumentException("선택한 게시글은 존재하지 않습니다.")
+    public CommentResponseDto createComment(Long postId, CommentCreateRequestDto requestDto, User user) {
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new IllegalArgumentException("게시글을 찾을 수 없습니다.")
         );
-
         Comment comment = new Comment(requestDto.getContent(), user, post, null);
-        commentRepository.save(comment);
+        Comment savedComment = commentRepository.save(comment);
+        notificationService.sendNewCommentOnPostNotification(savedComment);
+
+        return new CommentResponseDto(savedComment, 0L, false);
     }
 
     @Transactional
-    public void createReply(Long parentId, CommentRequestDto requestDto, User user) {
-        Comment parentComment = findComment(parentId);
-        Post post = parentComment.getPost();
+    public CommentResponseDto createReply(Long parentId, CommentCreateRequestDto requestDto, User user) {
+        Comment parentComment = commentRepository.findById(parentId)
+                .orElseThrow(() -> new IllegalArgumentException("원본 댓글을 찾을 수 없습니다."));
 
+        Post post = parentComment.getPost();
         Comment reply = new Comment(requestDto.getContent(), user, post, parentComment);
-        commentRepository.save(reply);
+        Comment savedReply = commentRepository.save(reply);
+        notificationService.sendNewReplyOnCommentNotification(savedReply);
+
+        return new CommentResponseDto(savedReply, 0L, false);
     }
 
     @Transactional
