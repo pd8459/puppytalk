@@ -26,9 +26,10 @@ public class PostResponseDto {
         this.id = post.getId();
         this.title = post.getTitle();
         this.content = post.getContent();
-        this.authorUsername = post.getUser().getUsername();
 
         User author = post.getUser();
+        this.authorUsername = author.getUsername();
+
         if (author.isDeleted()) {
             this.authorNickname = "탈퇴한 사용자";
             this.authorProfileImageUrl = "/images/default_profile.png";
@@ -52,6 +53,5 @@ public class PostResponseDto {
         this(post);
         this.likeCount = likeCount;
         this.isLiked = isLiked;
-
     }
 }

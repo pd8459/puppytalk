@@ -1,8 +1,12 @@
 package com.example.puppytalk.User;
 
 import com.example.puppytalk.Jwt.JwtUtil;
+import com.example.puppytalk.Post.Post;
+import com.example.puppytalk.Post.PostRepository;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +21,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final PostRepository postRepository;
 
     @Transactional
     public User signup(UserSignupRequestDto requestDto){
@@ -60,6 +65,14 @@ public class UserService {
         }
 
         return jwtUtil.createToken(user.getUsername());
+    }
+
+    @Transactional(readOnly = true)
+    public PublicProfileResponseDto getPublicProfile(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        Page<Post> postPage = postRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+        return new PublicProfileResponseDto(user, postPage);
     }
 }
 

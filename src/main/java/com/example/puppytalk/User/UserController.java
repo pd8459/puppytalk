@@ -3,6 +3,9 @@ package com.example.puppytalk.User;
 import com.example.puppytalk.Jwt.JwtUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,6 +45,14 @@ public class UserController {
         public UserInfoDto(String nickname) {
             this.nickname = nickname;
         }
+    }
+
+    @GetMapping("/public-profile/{username}")
+    public ResponseEntity<PublicProfileResponseDto> getPublicProfile(
+            @PathVariable String username,
+            @PageableDefault(size=10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PublicProfileResponseDto profileDto = userService.getPublicProfile(username, pageable);
+        return ResponseEntity.ok(profileDto);
     }
 
 }
