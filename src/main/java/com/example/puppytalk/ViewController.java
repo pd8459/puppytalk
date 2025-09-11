@@ -69,4 +69,9 @@ public class ViewController {
     public String notificationsPage() {
         return "notifications";
     }
+
+    @GetMapping("/public-profile/{username}")
+    public String publicProfilePage() {
+        return "public-profile";
+    }
 }

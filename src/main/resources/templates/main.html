@@ -134,7 +134,9 @@
                                         </h5>
                                     </div>
                                     <p class="card-text mb-0 mt-2">
-                                        <small class="text-muted">작성자: ${post.authorNickname} | 작성일: ${formattedDate}</small>
+                                        <small class="text-muted">
+                                            작성자: <a href="/public-profile/${post.authorUsername}" class="text-decoration-none text-dark">${post.authorNickname}</a> | 작성일: ${formattedDate}
+                                        </small>
                                     </p>
                                 </div>
                             </div>

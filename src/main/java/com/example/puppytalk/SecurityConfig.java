@@ -37,8 +37,12 @@ public class SecurityConfig {
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .requestMatchers("/", "/login", "/signup", "/main", "/write-post", "/post-detail", "/edit-post","/classifier","/chatbot", "/mypage" ,"/profile/edit", "/messages", "/conversation", "/notifications").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/public-profile/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/public-profile/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/public-profile/**").permitAll()
                         .requestMatchers("/api/ai/classify-dog", "/api/ai/chat").permitAll()
+
 
                         .anyRequest().authenticated()
                 )

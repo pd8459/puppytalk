@@ -111,7 +111,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const postId = new URLSearchParams(window.location.search).get('id');
-    const token = localStorage.getItem('jwt');
+    // const token = localStorage.getItem('jwt');  <-- [수정] 이 줄을 삭제!
     let postDataCache = null;
     let currentUserCache = null;
     let currentCommentPage = 0;
@@ -123,94 +123,129 @@
         previewStyle: 'vertical',
         hooks: {
             addImageBlobHook: async (blob, callback) => {
+                if (!token) {
+                    alert('이미지를 업로드하려면 로그인이 필요합니다.');
+                    return;
+                }
                 const formData = new FormData();
                 formData.append('image', blob);
                 try {
-                    const response = await fetch('/api/images', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+                    const response = await fetch('/api/images', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        body: formData
+                    });
                     if (!response.ok) throw new Error('이미지 업로드 실패');
                     const data = await response.json();
                     callback(data.url, 'image');
-                } catch (error) { alert('이미지 업로드에 실패했습니다.'); }
+                } catch (error) {
+                    alert('이미지 업로드에 실패했습니다.');
+                }
             }
         }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
-        fetchPostDetail();
-        fetchComments(0);
+    async function initializePage() {
+        await fetchCurrentUser();
+        await fetchPostDetail();
+        await fetchComments(0);
+
         document.getElementById('comment-form').addEventListener('submit', handleCommentSubmit);
         document.getElementById('save-post-btn').addEventListener('click', handlePostSave);
         document.getElementById('save-comment-btn').addEventListener('click', handleCommentSave);
         document.getElementById('cancel-reply-btn').addEventListener('click', cancelReply);
-    });
+    }
+
+    window.addEventListener('DOMContentLoaded', initializePage);
+
+    async function fetchCurrentUser() {
+        if (!token) return;
+        try {
+            const response = await fetch('/api/profile', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (response.ok) {
+                currentUserCache = await response.json();
+            } else {
+                localStorage.removeItem('jwt');
+            }
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+        }
+    }
 
     async function fetchPostDetail() {
         try {
             const fetchOptions = token ? { headers: { 'Authorization': 'Bearer ' + token } } : {};
-            const [postResponse, meResponse] = await Promise.all([
-                fetch(`/api/posts/${postId}`, fetchOptions),
-                fetch('/api/profile', fetchOptions).catch(() => ({ ok: false }))
-            ]);
+            const response = await fetch(`/api/posts/${postId}`, fetchOptions);
 
-            if (!postResponse.ok) throw new Error('게시글을 불러올 수 없습니다.');
-            const postData = await postResponse.json();
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: '게시글을 불러올 수 없습니다.' }));
+                throw new Error(errorData.message || '게시글 정보를 가져오는데 실패했습니다.');
+            }
+
+            const postData = await response.json();
             postDataCache = postData;
 
-            if (meResponse.ok) {
-                currentUserCache = await meResponse.json();
-            }
-
-            document.getElementById('post-title').textContent = postData.title;
-
-            const formattedDate = new Date(postData.createdAt).toLocaleString('ko-KR');
-            const postMeta = document.getElementById('post-meta');
-            const postProfileImage = postData.authorProfileImageUrl ? postData.authorProfileImageUrl : '/images/default_profile.png';
-            postMeta.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <img src="${postProfileImage}" class="rounded-circle" width="32" height="32" style="object-fit: cover; margin-right: 10px;">
-                    <div>
-                        <strong>${postData.authorNickname}</strong>
-                        <div class="text-muted" style="font-size: 0.9em;">작성일: ${formattedDate}</div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('viewer').innerHTML = '';
-            new toastui.Editor.factory({
-                el: document.querySelector('#viewer'),
-                viewer: true,
-                initialValue: postData.content
-            });
-
-            const buttonsContainer = document.getElementById('buttons-container');
-            buttonsContainer.innerHTML = '';
-            if (currentUserCache && currentUserCache.username === postData.authorUsername) {
-                buttonsContainer.innerHTML = `
-                    <div>
-                        <button id="edit-post-btn" class="btn btn-secondary btn-sm">수정</button>
-                        <button id="delete-post-btn" class="btn btn-danger btn-sm">삭제</button>
-                    </div>
-                `;
-                document.getElementById('edit-post-btn').addEventListener('click', openPostEditModal);
-                document.getElementById('delete-post-btn').addEventListener('click', deletePost);
-            }
-
-            const likeButton = document.getElementById('like-btn');
-            if (postData.isLiked) {
-                likeButton.classList.replace('btn-outline-danger', 'btn-danger');
-                likeButton.innerHTML = `❤️ Liked <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
-            } else {
-                likeButton.classList.replace('btn-danger', 'btn-outline-danger');
-                likeButton.innerHTML = `♡ Like <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
-            }
-            likeButton.onclick = togglePostLike;
-
-            setupMessageButtons();
+            renderPostDetails(postData);
+            setupActionButtons(postData);
 
         } catch (error) {
             console.error('Error fetching post detail:', error);
-            document.querySelector('.container').innerHTML = '<h2>게시글을 찾을 수 없습니다.</h2>';
+            document.querySelector('.container').innerHTML = `<div class="alert alert-danger text-center" role="alert">${error.message}</div>`;
         }
+    }
+
+    function renderPostDetails(postData) {
+        document.title = `PuppyTalk - ${postData.title}`;
+        document.getElementById('post-title').textContent = postData.title;
+
+        const formattedDate = new Date(postData.createdAt).toLocaleString('ko-KR');
+        const postMeta = document.getElementById('post-meta');
+        const postProfileImage = postData.authorProfileImageUrl || '/images/default_profile.png';
+
+        postMeta.innerHTML = `
+            <div class="d-flex align-items-center">
+                <img src="${postProfileImage}" class="rounded-circle" width="32" height="32" style="object-fit: cover; margin-right: 10px;">
+                <div>
+                    <strong><a href="/public-profile/${postData.authorUsername}" class="text-decoration-none text-dark">${postData.authorNickname}</a></strong>
+                    <div class="text-muted" style="font-size: 0.9em;">작성일: ${formattedDate}</div>
+                </div>
+            </div>
+        `;
+
+        const viewerEl = document.getElementById('viewer');
+        viewerEl.innerHTML = '';
+        new toastui.Editor.factory({
+            el: viewerEl,
+            viewer: true,
+            initialValue: postData.content
+        });
+    }
+
+    function setupActionButtons(postData) {
+        const buttonsContainer = document.getElementById('buttons-container');
+        buttonsContainer.innerHTML = '';
+        if (currentUserCache && currentUserCache.username === postData.authorUsername) {
+            buttonsContainer.innerHTML = `
+                <div>
+                    <button id="edit-post-btn" class="btn btn-secondary btn-sm">수정</button>
+                    <button id="delete-post-btn" class="btn btn-danger btn-sm ms-1">삭제</button>
+                </div>
+            `;
+            document.getElementById('edit-post-btn').addEventListener('click', openPostEditModal);
+            document.getElementById('delete-post-btn').addEventListener('click', deletePost);
+        }
+
+        const likeButton = document.getElementById('like-btn');
+        if (postData.isLiked) {
+            likeButton.className = 'btn btn-danger';
+            likeButton.innerHTML = `❤️ Liked <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
+        } else {
+            likeButton.className = 'btn btn-outline-danger';
+            likeButton.innerHTML = `♡ Like <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
+        }
+        likeButton.onclick = togglePostLike;
+
+        setupMessageButtons();
     }
 
     function setupMessageButtons() {
@@ -225,7 +260,7 @@
                 window.location.href = '/login?redirectURL=' + encodeURIComponent(window.location.href);
                 return;
             }
-            document.getElementById('message-modal-title').textContent = `${receiverNickname}님에게 쪽지 보내기`;
+            document.getElementById('message-modal-title').textContent = `${receiverNickname}님에게 메시지 보내기`;
             document.getElementById('message-receiver-username').value = receiverUsername;
             document.getElementById('message-content').value = '';
             messageModal.show();
@@ -267,11 +302,11 @@
                 });
 
                 if (response.ok) {
-                    alert('쪽지를 성공적으로 보냈습니다.');
+                    alert('메시지를 성공적으로 보냈습니다.');
                     messageModal.hide();
                 } else {
                     const errorText = await response.text();
-                    alert(`쪽지 보내기에 실패했습니다: ${errorText}`);
+                    alert(`메시지 보내기에 실패했습니다: ${errorText}`);
                 }
             } catch (error) {
                 alert('오류가 발생했습니다.');
@@ -320,31 +355,31 @@
         const likeBtnClass = comment.isLiked ? 'btn-danger' : 'btn-outline-danger';
         const likeIcon = comment.isLiked ? '❤️' : '♡';
         const likeText = comment.isLiked ? 'Liked' : 'Like';
-        const commentProfileImage = comment.authorProfileImageUrl ? comment.authorProfileImageUrl : '/images/default_profile.png';
+        const commentProfileImage = comment.authorProfileImageUrl || '/images/default_profile.png';
 
         commentEl.innerHTML = `
-    <div class="d-flex align-items-start">
-        <img src="${commentProfileImage}" class="rounded-circle" width="40" height="40" style="object-fit: cover; margin-right: 15px;">
-        <div class="flex-grow-1">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <strong>${comment.authorNickname}</strong>
-                    <small class="text-muted ms-2">${commentDate}</small>
+        <div class="d-flex align-items-start">
+            <img src="${commentProfileImage}" class="rounded-circle" width="40" height="40" style="object-fit: cover; margin-right: 15px;">
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong><a href="/public-profile/${comment.authorUsername}" class="text-decoration-none text-dark">${comment.authorNickname}</a></strong>
+                        <small class="text-muted ms-2">${commentDate}</small>
+                    </div>
+                    <div class="text-nowrap">${buttonsHtml}</div>
                 </div>
-                <div class="text-nowrap">${buttonsHtml}</div>
-            </div>
-            <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
-            <div class="text-end">
-                <button class="btn btn-sm btn-outline-info send-message-to-commenter-btn" data-username="${comment.authorUsername}" data-nickname="${comment.authorNickname}">쪽지</button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="setReplyTarget(${comment.id}, '${comment.authorNickname}')">답글</button>
-                <button class="btn ${likeBtnClass} btn-sm" onclick="toggleCommentLike(${comment.id})">
-                    ${likeIcon} ${likeText} <span class="badge bg-light text-dark ms-1">${comment.likeCount}</span>
-                </button>
+                <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
+                <div class="text-end">
+                    <button class="btn btn-sm btn-outline-info send-message-to-commenter-btn" data-username="${comment.authorUsername}" data-nickname="${comment.authorNickname}">메시지</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="setReplyTarget(${comment.id}, '${comment.authorNickname}')">답글</button>
+                    <button class="btn ${likeBtnClass} btn-sm" onclick="toggleCommentLike(${comment.id})">
+                        ${likeIcon} ${likeText} <span class="badge bg-light text-dark ms-1">${comment.likeCount}</span>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="children-container" style="margin-left: 55px; margin-top: 10px;"></div>
-    `;
+        <div class="children-container" style="margin-left: 55px; margin-top: 10px;"></div>
+        `;
 
         if (comment.children && comment.children.length > 0) {
             const childrenContainer = commentEl.querySelector('.children-container');
@@ -360,9 +395,7 @@
         paginationContainer.innerHTML = '';
         const currentPage = pageData.number;
         const totalPages = pageData.totalPages;
-
         if (totalPages <= 1) return;
-
         const createPageLink = (page, text, isDisabled = false, isActive = false) => {
             const li = document.createElement('li');
             li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
@@ -376,7 +409,6 @@
             li.appendChild(link);
             return li;
         };
-
         paginationContainer.appendChild(createPageLink(currentPage - 1, '이전', currentPage === 0));
         for (let i = 0; i < totalPages; i++) {
             paginationContainer.appendChild(createPageLink(i, i + 1, false, i === currentPage));
@@ -403,9 +435,9 @@
 
     async function handleCommentSubmit(event) {
         event.preventDefault();
+        if (!token) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
         const content = document.getElementById('comment-content').value;
         const parentId = document.getElementById('parent-comment-id').value || null;
-        if (!token) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
         const url = parentId ? `/api/comments/${parentId}/replies` : `/api/posts/${postId}/comments`;
         try {
             const response = await fetch(url, {
@@ -413,9 +445,15 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({ content })
             });
-            if (response.ok) { cancelReply(); fetchComments(currentCommentPage); }
-            else { alert('댓글 작성에 실패했습니다.'); }
-        } catch (error) { alert('댓글 작성 중 오류가 발생했습니다.'); }
+            if (response.ok) {
+                cancelReply();
+                fetchComments(currentCommentPage);
+            } else {
+                alert('댓글 작성에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('댓글 작성 중 오류가 발생했습니다.');
+        }
     }
 
     async function handlePostSave() {
@@ -430,8 +468,12 @@
             if (response.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('postEditModal')).hide();
                 fetchPostDetail();
-            } else { alert('게시글 수정에 실패했습니다.'); }
-        } catch (error) { alert('게시글 수정 중 오류가 발생했습니다.'); }
+            } else {
+                alert('게시글 수정에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('게시글 수정 중 오류가 발생했습니다.');
+        }
     }
 
     async function handleCommentSave() {
@@ -446,26 +488,47 @@
             if (response.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('commentEditModal')).hide();
                 fetchComments(currentCommentPage);
-            } else { alert('댓글 수정에 실패했습니다.'); }
-        } catch (error) { alert('댓글 수정 중 오류가 발생했습니다.'); }
+            } else {
+                alert('댓글 수정에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Error updating comment:', error);
+            alert('댓글 수정 중 오류가 발생했습니다.');
+        }
     }
 
     async function togglePostLike() {
         if (!token) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
         try {
-            const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-            if (response.ok) { fetchPostDetail(); }
-            else { alert('좋아요 처리에 실패했습니다.'); }
-        } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
+            const response = await fetch(`/api/posts/${postId}/like`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                fetchPostDetail();
+            } else {
+                alert('좋아요 처리에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('좋아요 처리 중 오류가 발생했습니다.');
+        }
     }
 
     async function toggleCommentLike(commentId) {
-        if (!token) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
+        if (!token) { alert('로그인이 필요합니다.'); return; }
         try {
-            const response = await fetch(`/api/comments/${commentId}/like`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-            if (response.ok) { fetchComments(currentCommentPage); }
-            else { alert('좋아요 처리에 실패했습니다.'); }
-        } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
+            const response = await fetch(`/api/comments/${commentId}/like`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                fetchComments(currentCommentPage);
+            } else {
+                alert('좋아요 처리에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('좋아요 처리 중 오류가 발생했습니다.');
+        }
     }
 
     function openPostEditModal() {
@@ -478,12 +541,19 @@
     async function deletePost() {
         if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
         try {
-            const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+            const response = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
             if (response.ok) {
                 alert('게시글이 삭제되었습니다.');
                 window.location.href = '/main';
-            } else { alert('게시글 삭제에 실패했습니다.'); }
-        } catch (error) { alert('게시글 삭제 중 오류가 발생했습니다.'); }
+            } else {
+                alert('게시글 삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('게시글 삭제 중 오류가 발생했습니다.');
+        }
     }
 
     function openCommentEditModal(commentId, currentContent) {
@@ -495,10 +565,18 @@
     async function deleteComment(commentId) {
         if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
         try {
-            const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-            if (response.ok) { fetchComments(currentCommentPage); }
-            else { alert('댓글 삭제에 실패했습니다.'); }
-        } catch (error) { alert('댓글 삭제 중 오류가 발생했습니다.'); }
+            const response = await fetch(`/api/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                fetchComments(currentCommentPage);
+            } else {
+                alert('댓글 삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('댓글 삭제 중 오류가 발생했습니다.');
+        }
     }
 </script>
 </body>
