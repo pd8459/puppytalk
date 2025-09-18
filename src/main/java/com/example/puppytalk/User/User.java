@@ -1,5 +1,6 @@
 package com.example.puppytalk.User;
 
+import com.example.puppytalk.pet.Pet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,6 +9,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -67,4 +70,8 @@ public class User {
     public void withdraw() {
         this.isDeleted = true;
     }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Pet> pets = new ArrayList<>();
+
 }
