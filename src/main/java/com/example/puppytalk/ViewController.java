@@ -74,4 +74,7 @@ public class ViewController {
     public String publicProfilePage() {
         return "public-profile";
     }
+
+    @GetMapping("/playgrounds")
+    public String playgroundsPage() { return "playgrounds";}
 }

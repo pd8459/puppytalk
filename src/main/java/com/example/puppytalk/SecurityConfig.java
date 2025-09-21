@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,27 +25,40 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/images/**").permitAll()
-                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .requestMatchers("/", "/login", "/signup", "/main", "/write-post", "/post-detail", "/edit-post","/classifier","/chatbot", "/mypage" ,"/profile/edit", "/messages", "/conversation", "/notifications").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/public-profile/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/public-profile/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users/public-profile/**").permitAll()
-                        .requestMatchers("/api/ai/classify-dog", "/api/ai/chat").permitAll()
+                .csrf((csrf) -> csrf.disable())
+                .sessionManagement((sessionManagement) ->
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                );
 
-
-                        .anyRequest().authenticated()
+        // [수정] CSP 정책에 t1.daumcdn.net 추가
+        http.headers(headers ->
+                headers.contentSecurityPolicy(csp ->
+                        csp.policyDirectives("script-src 'self' 'unsafe-inline' *.kakao.com t1.daumcdn.net")
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class);
+        );
+
+        String[] PUBLIC_URLS = {
+                "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds",
+                "/public-profile/**", "/api/users/signup", "/api/users/login",
+                "/api/ai/**", "/images/**", "/css/**", "/js/**",
+                "/classifier", "/chatbot", "/api/playgrounds"
+        };
+
+        http.authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                .requestMatchers(PUBLIC_URLS).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                .anyRequest().authenticated()
+        );
+
+        http.addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

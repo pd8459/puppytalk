@@ -11,10 +11,6 @@ import org.springframework.util.unit.DataSize;
 @Configuration
 public class BeanConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public MultipartConfigElement multipartConfigElement() {
