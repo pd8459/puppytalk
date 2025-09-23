@@ -37,7 +37,6 @@ public class SecurityConfig {
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
-        // [수정] CSP 정책에 t1.daumcdn.net 추가
         http.headers(headers ->
                 headers.contentSecurityPolicy(csp ->
                         csp.policyDirectives("script-src 'self' 'unsafe-inline' *.kakao.com t1.daumcdn.net")
@@ -45,10 +44,10 @@ public class SecurityConfig {
         );
 
         String[] PUBLIC_URLS = {
-                "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds",
+                "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds", "/hospitals",
                 "/public-profile/**", "/api/users/signup", "/api/users/login",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
-                "/classifier", "/chatbot", "/api/playgrounds"
+                "/classifier", "/chatbot", "/api/playgrounds", "/api/hospitals"
         };
 
         http.authorizeHttpRequests(authorize -> authorize
