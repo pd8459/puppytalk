@@ -77,4 +77,9 @@ public class ViewController {
 
     @GetMapping("/playgrounds")
     public String playgroundsPage() { return "playgrounds";}
+
+    @GetMapping("/hospitals")
+    public String hospitalsPage() {
+        return "hospitals";
+    }
 }
