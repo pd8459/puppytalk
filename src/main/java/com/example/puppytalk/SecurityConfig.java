@@ -47,7 +47,7 @@ public class SecurityConfig {
                 "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds", "/hospitals",
                 "/public-profile/**", "/api/users/signup", "/api/users/login",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
-                "/classifier", "/chatbot", "/api/playgrounds", "/api/hospitals"
+                "/classifier", "/chatbot",  "/api/hospitals/**",  "/api/playgrounds/**"
         };
 
         http.authorizeHttpRequests(authorize -> authorize

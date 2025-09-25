@@ -19,4 +19,11 @@ public class PlaygroundService {
                 .map(PlaygroundResponseDto::new)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<PlaygroundResponseDto> searchPlaygrounds(String keyword) {
+        return playgroundRepository.findByNameContainingOrAddressContaining(keyword, keyword).stream()
+                .map(PlaygroundResponseDto::new)
+                .collect(Collectors.toList());
+    }
 }

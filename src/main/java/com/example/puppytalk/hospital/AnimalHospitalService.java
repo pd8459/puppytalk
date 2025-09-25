@@ -18,4 +18,11 @@ public class AnimalHospitalService {
                 .map(AnimalHospitalResponseDto::new)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<AnimalHospitalResponseDto> searchHospitals(String keyword) {
+        return hospitalRepository.findByNameContainingOrAddressContaining(keyword, keyword).stream()
+                .map(AnimalHospitalResponseDto::new)
+                .collect(Collectors.toList());
+    }
 }
