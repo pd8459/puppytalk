@@ -11,7 +11,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 id="nickname-header">마이페이지</h2>
-        <a href="/profile/edit" class="btn btn-outline-secondary">프로필 수정</a>
+        <a href="/profile-edit" class="btn btn-outline-secondary">프로필 수정</a>
     </div>
 
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -43,27 +43,23 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const token = localStorage.getItem('jwt');
-
     document.addEventListener('DOMContentLoaded', async () => {
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            window.location.href = '/login';
-            return;
-        }
         try {
-            const res = await fetch('/api/profile', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            if (!res.ok) throw new Error('인증 정보가 유효하지 않습니다.');
+            const res = await fetch('/api/profile');
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/login';
+                }
+                throw new Error('인증 정보가 유효하지 않습니다.');
+            }
             const data = await res.json();
             document.getElementById('nickname-header').textContent = `${data.nickname}님의 활동 내역`;
+
+            fetchMyPosts(0);
         } catch (err) {
-            alert(err.message);
-            window.location.href = '/login';
-            return;
+            console.error(err);
         }
-        fetchMyPosts(0);
     });
 
     document.getElementById('posts-tab').addEventListener('click', () => fetchMyPosts(0));
@@ -71,27 +67,34 @@
     document.getElementById('messages-tab').addEventListener('click', () => fetchMyConversations());
 
     async function fetchMyPosts(page) {
-        const response = await fetch(`/api/mypage/posts?page=${page}`, { headers: { 'Authorization': 'Bearer ' + token }});
-        if (response.ok) renderList(await response.json(), 'posts');
-        else handleAuthError();
+        try {
+            const response = await fetch(`/api/mypage/posts?page=${page}`);
+            if (!response.ok) throw new Error('게시글 목록을 불러오지 못했습니다.');
+            renderList(await response.json(), 'posts');
+        } catch (error) {
+            handleAuthError(error);
+        }
     }
+
     async function fetchMyComments(page) {
-        const response = await fetch(`/api/mypage/comments?page=${page}`, { headers: { 'Authorization': 'Bearer ' + token }});
-        if (response.ok) renderList(await response.json(), 'comments');
-        else handleAuthError();
+        try {
+            const response = await fetch(`/api/mypage/comments?page=${page}`);
+            if (!response.ok) throw new Error('댓글 목록을 불러오지 못했습니다.');
+            renderList(await response.json(), 'comments');
+        } catch (error) {
+            handleAuthError(error);
+        }
     }
 
     async function fetchMyConversations() {
         const listContainer = document.getElementById('my-conversations-list');
         listContainer.innerHTML = '<p class="text-center">쪽지 목록을 불러오는 중...</p>';
         try {
-            const response = await fetch('/api/messages', { headers: { 'Authorization': 'Bearer ' + token } });
+            const response = await fetch('/api/messages');
             if (!response.ok) throw new Error('쪽지 목록을 불러오지 못했습니다.');
-            const conversations = await response.json();
-            renderConversations(conversations);
+            renderConversations(await response.json());
         } catch (error) {
-            console.error('Error fetching conversations:', error);
-            listContainer.innerHTML = `<p class="text-center text-danger">${error.message}</p>`;
+            handleAuthError(error, listContainer);
         }
     }
 
@@ -105,7 +108,7 @@
             const link = document.createElement('a');
             link.className = 'list-group-item list-group-item-action';
             const date = new Date(item.createdAt).toLocaleString('ko-KR');
-            const profileImage = item.authorProfileImageUrl ? item.authorProfileImageUrl : '/images/default_profile.png';
+            const profileImage = item.authorProfileImageUrl || '/images/default_profile.png';
             if (type === 'posts') {
                 link.href = `/post-detail?id=${item.id}`;
                 link.innerHTML = `<div class="d-flex w-100 justify-content-between"><h5 class="mb-1">${item.title}</h5><small>${date}</small></div><div class="d-flex align-items-center mt-2"><img src="${profileImage}" class="rounded-circle" width="24" height="24" style="object-fit: cover; margin-right: 8px;"><small>${item.authorNickname}</small></div>`;
@@ -156,9 +159,15 @@
         }
         container.appendChild(ul);
     }
-    function handleAuthError() {
-        alert('인증 정보가 유효하지 않습니다. 다시 로그인해주세요.');
-        window.location.href = '/login';
+
+    function handleAuthError(error, container) {
+        console.error(error);
+        if (container) {
+            container.innerHTML = `<p class="text-center text-danger">${error.message}</p>`;
+        } else {
+            alert('인증 정보가 유효하지 않습니다. 다시 로그인해주세요.');
+            window.location.href = '/login';
+        }
     }
 </script>
 </body>

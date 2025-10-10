@@ -39,15 +39,20 @@ public class SecurityConfig {
 
         http.headers(headers ->
                 headers.contentSecurityPolicy(csp ->
-                        csp.policyDirectives("script-src 'self' 'unsafe-inline' *.kakao.com t1.daumcdn.net")
+                        csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline' *.kakao.com t1.daumcdn.net; " +
+                                        "img-src 'self' data: *.daumcdn.net; " +
+                                        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net uicdn.toast.com"
+                        )
                 )
         );
 
         String[] PUBLIC_URLS = {
                 "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds", "/hospitals",
-                "/public-profile/**", "/api/users/signup", "/api/users/login",
+                "/public-profile/**", "/api/users/signup", "/api/users/login", "/api/logout",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
-                "/classifier", "/chatbot",  "/api/hospitals/**",  "/api/playgrounds/**"
+                "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**"
         };
 
         http.authorizeHttpRequests(authorize -> authorize

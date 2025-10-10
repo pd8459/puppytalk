@@ -29,7 +29,7 @@ public class ViewController {
         return "write-post";
     }
 
-    @GetMapping("post-detail")
+    @GetMapping("/post-detail")
     public String postDetailPage() {
         return "post-detail";
     }
@@ -52,7 +52,7 @@ public class ViewController {
     @GetMapping("/mypage")
     public String mypagePage() { return "mypage";}
 
-    @GetMapping("/profile/edit")
+    @GetMapping("/profile-edit")
     public String profileEditPage() { return "profile-edit";}
 
     @GetMapping("/messages")
