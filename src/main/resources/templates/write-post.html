@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
 </head>
 <body>
-
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container mt-4">
@@ -24,7 +23,6 @@
                         <option value="HEALTH_INFO">건강 정보</option>
                     </select>
                 </div>
-
                 <div class="mb-3">
                     <label for="post-title" class="form-label">제목</label>
                     <input type="text" class="form-control" id="post-title" required>
@@ -51,11 +49,9 @@
             addImageBlobHook: async (blob, callback) => {
                 const formData = new FormData();
                 formData.append('image', blob);
-                const token = localStorage.getItem('jwt');
                 try {
                     const response = await fetch('/api/images', {
                         method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + token },
                         body: formData,
                     });
                     if (!response.ok) throw new Error('이미지 업로드 실패');
@@ -68,18 +64,27 @@
         }
     });
 
+    // 페이지 로드 시 로그인 상태를 먼저 확인
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/profile');
+            if (!response.ok) {
+                alert('글을 작성하려면 로그인이 필요합니다.');
+                window.location.href = '/login';
+            }
+        } catch (error) {
+            alert('인증 상태 확인 중 오류가 발생했습니다.');
+            window.location.href = '/main';
+        }
+    });
+
     document.getElementById('post-form').addEventListener('submit', async function(event) {
         event.preventDefault();
         const title = document.getElementById('post-title').value;
         const content = editor.getMarkdown();
         const category = document.getElementById('post-category').value;
-        const token = localStorage.getItem('jwt');
         const messageDiv = document.getElementById('post-message');
 
-        if (!token) {
-            messageDiv.innerHTML = '<div class="alert alert-danger">로그인이 필요합니다.</div>';
-            return;
-        }
         if (!category) {
             alert('카테고리를 선택해주세요.');
             return;
@@ -88,10 +93,7 @@
         try {
             const response = await fetch('/api/posts', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title, content, category })
             });
 

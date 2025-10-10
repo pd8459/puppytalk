@@ -17,96 +17,79 @@
                     <a class="nav-link" th:href="@{/playgrounds}">반려견 놀이터</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/hospitals}">동물 병원</a>
+                    <a class="nav-link" th:href="@{/hospitals}">동물병원</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/classifier}">AI 품종 분석</a>
+                <li class="nav-item" id="mypage-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/mypage}">마이페이지</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/chatbot}">AI 챗봇</a>
+                <li class="nav-item" id="profile-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/profile-edit}">프로필</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="nav-messages-link" href="/messages" style="display: none;">메시지</a>
+                <li class="nav-item" id="notifications-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/notifications}">알림</a>
+                </li>
+                <li class="nav-item" id="messages-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/messages}">메시지</a>
                 </li>
             </ul>
-        </div>
 
-        <div class="d-flex align-items-center">
-            <div id="anonymous-nav">
-                <a class="btn btn-outline-light me-2" href="/login">로그인</a>
-                <a class="btn btn-light" href="/signup">회원가입</a>
-            </div>
-
-            <div id="authenticated-nav" class="d-flex align-items-center" style="display: none;">
-                <a class="nav-link text-light me-3 position-relative" href="/notifications">
-                    알림
-                    <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-                        <span id="notification-count"></span>
-                    </span>
-                </a>
-
-                <img id="navbar-profile-image" src="/images/default_profile.png" class="rounded-circle" width="32" height="32" style="object-fit: cover; margin-right: 8px;">
-                <span id="navbar-nickname" class="navbar-text me-3"></span>
-                <a class="btn btn-outline-light me-2" th:href="@{/profile/edit}">프로필 수정</a>
-                <button class="btn btn-light" id="logout-btn">로그아웃</button>
+            <div class="d-flex align-items-center">
+                <div id="anonymous-nav" style="display: flex;">
+                    <a class="btn btn-outline-light" href="/login">로그인</a>
+                </div>
+                <div id="authenticated-nav" style="display: none;">
+                    <button class="btn btn-light" id="logout-btn">로그아웃</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const token = localStorage.getItem('jwt');
-        const anonymousNav = document.getElementById('anonymous-nav');
-        const authenticatedNav = document.getElementById('authenticated-nav');
-        const messagesLink = document.getElementById('nav-messages-link');
+        document.addEventListener('DOMContentLoaded', function() {
+            const anonymousNav = document.getElementById('anonymous-nav');
+            const authenticatedNav = document.getElementById('authenticated-nav');
+            const mypageNavItem = document.getElementById('mypage-nav-item');
+            const profileNavItem = document.getElementById('profile-nav-item');
+            const notificationsNavItem = document.getElementById('notifications-nav-item');
+            const messagesNavItem = document.getElementById('messages-nav-item');
 
-        if (token) {
-            if (anonymousNav) anonymousNav.remove();
-
-            authenticatedNav.style.display = 'flex';
-            messagesLink.style.display = 'block';
-
-            fetch('/api/profile', { headers: { 'Authorization': 'Bearer ' + token }})
-                .then(res => {
-                    if (!res.ok) throw new Error('Failed to fetch profile');
-                    return res.json();
-                })
+            fetch('/api/profile')
+                .then(res => res.ok ? res.json() : Promise.reject('Not logged in'))
                 .then(user => {
-                    document.getElementById('navbar-nickname').textContent = `${user.nickname}님`;
-                    if (user.profileImageUrl) {
-                        document.getElementById('navbar-profile-image').src = user.profileImageUrl;
-                    }
-                }).catch(error => {
-                console.error("Error fetching profile:", error);
-                localStorage.removeItem('jwt');
-                window.location.reload();
-            });
+                    anonymousNav.style.display = 'none';
+                    authenticatedNav.style.display = 'block';
+                    mypageNavItem.style.display = 'block';
+                    profileNavItem.style.display = 'block';
 
-            fetch('/api/notifications/unread-count', { headers: { 'Authorization': 'Bearer ' + token }})
-                .then(res => res.json())
-                .then(count => {
-                    const badge = document.getElementById('notification-badge');
-                    const countSpan = document.getElementById('notification-count');
-                    if (count > 0) {
-                        countSpan.textContent = count > 9 ? '9+' : count;
-                        badge.style.display = 'inline-block';
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                }).catch(console.error);
+                    notificationsNavItem.style.display = 'block';
+                    messagesNavItem.style.display = 'block';
+                })
+                .catch(error => {
+                    anonymousNav.style.display = 'block';
+                    authenticatedNav.style.display = 'none';
+                    mypageNavItem.style.display = 'none';
+                    profileNavItem.style.display = 'none';
+                    notificationsNavItem.style.display = 'none';
+                    messagesNavItem.style.display = 'none';
+                });
 
             const logoutButton = document.getElementById('logout-btn');
             if(logoutButton) {
                 logoutButton.addEventListener('click', () => {
-                    localStorage.removeItem('jwt');
-                    alert('로그아웃 되었습니다.');
-                    window.location.reload();
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(response => {
+                            if (response.ok) {
+                                alert('로그아웃 되었습니다.');
+                                window.location.reload();
+                            } else {
+                                alert('로그아웃에 실패했습니다.');
+                            }
+                        });
                 });
             }
-
-        } else {
-            if (authenticatedNav) authenticatedNav.remove();
-        }
+        });
     </script>
 </nav>
+
 </body>
 </html>

@@ -23,31 +23,30 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService; // 사용자 정보를 조회하기 위해 필요
+    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String token = resolveToken(request);
+        String tokenValue = jwtUtil.getTokenFromRequest(request);
 
-        if (token != null) {
-            Claims userInfo = jwtUtil.getUserInfoFromToken(token);
-            try {
-                setAuthentication(userInfo.getSubject());
-            } catch (Exception e) {
-                log.error("Authentication error: {}", e.getMessage());
+        if (StringUtils.hasText(tokenValue)) {
+            if (jwtUtil.validateToken(tokenValue)) {
+                Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
+                try {
+                    setAuthentication(info.getSubject());
+                } catch (Exception e) {
+                    log.error("Authentication error: {}", e.getMessage());
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
+            } else {
+                log.error("Invalid JWT token");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
         }
-        filterChain.doFilter(request, response);
-    }
 
-    private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader(JwtUtil.AUTHORIZATION_HEADER);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(JwtUtil.BEARER_PREFIX)) {
-            return bearerToken.substring(7);
-        }
-        return null;
+        filterChain.doFilter(request, response);
     }
 
     public void setAuthentication(String username) {
