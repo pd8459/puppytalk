@@ -115,28 +115,30 @@
     let currentUserCache = null;
     let currentCommentPage = 0;
 
-    const postEditEditor = new toastui.Editor({
-        el: document.querySelector('#edit-editor'),
-        height: '400px',
-        initialEditType: 'markdown',
-        previewStyle: 'vertical',
-        hooks: {
-            addImageBlobHook: async (blob, callback) => {
-                const formData = new FormData();
-                formData.append('image', blob);
-                try {
-                    const response = await fetch('/api/images', { method: 'POST', body: formData });
-                    if (!response.ok) throw new Error('이미지 업로드 실패');
-                    const data = await response.json();
-                    callback(data.url, 'image');
-                } catch (error) {
-                    alert('이미지 업로드에 실패했습니다.');
-                }
-            }
-        }
-    });
+    let postEditEditor;
 
     window.addEventListener('DOMContentLoaded', async () => {
+        postEditEditor = new toastui.Editor({
+            el: document.querySelector('#edit-editor'),
+            height: '400px',
+            initialEditType: 'markdown',
+            previewStyle: 'vertical',
+            hooks: {
+                addImageBlobHook: async (blob, callback) => {
+                    const formData = new FormData();
+                    formData.append('image', blob);
+                    try {
+                        const response = await fetch('/api/images', { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error('이미지 업로드 실패');
+                        const data = await response.json();
+                        callback(data.url, 'image');
+                    } catch (error) {
+                        alert('이미지 업로드에 실패했습니다.');
+                    }
+                }
+            }
+        });
+
         await fetchCurrentUser();
         await fetchPostDetail();
         await fetchComments(0);

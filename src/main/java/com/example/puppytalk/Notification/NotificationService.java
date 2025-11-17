@@ -5,6 +5,7 @@ import com.example.puppytalk.Message.Message;
 import com.example.puppytalk.Post.Post;
 import com.example.puppytalk.User.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public void sendNewCommentOnPostNotification(Comment comment) {
         Post post = comment.getPost();
@@ -27,12 +29,19 @@ public class NotificationService {
             String url = "/post-detail?id=" + post.getId();
 
             Notification notification = new Notification(
-                    postAuthor, // 알림을 받는 사람
+                    postAuthor,
                     NotificationType.NEW_COMMENT_ON_POST,
                     message,
                     url
             );
-            notificationRepository.save(notification);
+            Notification savedNotification = notificationRepository.save(notification);
+
+            NotificationResponseDto dto = new NotificationResponseDto(savedNotification);
+            messagingTemplate.convertAndSendToUser(
+                    postAuthor.getUsername(),
+                    "/topic/notifications",
+                    dto
+            );
         }
     }
 
@@ -55,7 +64,14 @@ public class NotificationService {
                     message,
                     url
             );
-            notificationRepository.save(notification);
+            Notification savedNotification = notificationRepository.save(notification);
+
+            NotificationResponseDto dto = new NotificationResponseDto(savedNotification);
+            messagingTemplate.convertAndSendToUser(
+                    parentCommentAuthor.getUsername(),
+                    "/topic/notifications",
+                    dto
+            );
         }
     }
 
@@ -65,7 +81,7 @@ public class NotificationService {
 
         if (!sender.getId().equals(receiver.getId())) {
             String notificationMessage = sender.getNickname() + "님으로부터 새로운 메시지가 도착했습니다.";
-            String url = "/conversation?id=" + message.getConversation().getId();
+            String url = "/messages";
 
             Notification notification = new Notification(
                     receiver,
@@ -73,7 +89,14 @@ public class NotificationService {
                     notificationMessage,
                     url
             );
-            notificationRepository.save(notification);
+            Notification savedNotification = notificationRepository.save(notification);
+
+            NotificationResponseDto dto = new NotificationResponseDto(savedNotification);
+            messagingTemplate.convertAndSendToUser(
+                    receiver.getUsername(),
+                    "/topic/notifications",
+                    dto
+            );
         }
     }
 

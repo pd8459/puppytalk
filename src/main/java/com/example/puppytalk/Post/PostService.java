@@ -28,9 +28,9 @@ public class PostService {
     public Page<PostResponseDto> getPosts(PostCategory category, Pageable pageable) {
         Page<Post> posts;
         if (category != null) {
-            posts = postRepository.findByCategory(category, pageable);
+            posts = postRepository.findByCategoryWithUserAndImages(category, pageable);
         } else {
-            posts = postRepository.findAll(pageable);
+            posts = postRepository.findAllWithUserAndImages(pageable);
         }
         return posts.map(PostResponseDto::new);
     }
@@ -104,9 +104,9 @@ public class PostService {
     public Page<PostResponseDto> searchPosts(String keyword, PostCategory category, Pageable pageable) {
         Page<Post> posts;
         if (category != null) {
-            posts = postRepository.findByTitleContainingAndCategory(keyword, category, pageable);
+            posts = postRepository.findByTitleContainingAndCategoryWithUser(keyword, category, pageable);
         } else {
-            posts = postRepository.findByTitleContaining(keyword, pageable);
+            posts = postRepository.findByTitleContainingWithUser(keyword, pageable);
         }
         return posts.map(PostResponseDto::new);
     }

@@ -36,6 +36,7 @@
                 if (response.status === 401 || response.status === 403) {
                     alert('로그인이 필요합니다.');
                     window.location.href = '/login?redirectURL=' + encodeURIComponent(window.location.href);
+                    return;
                 }
                 throw new Error('메시지 목록을 불러오는데 실패했습니다.');
             }

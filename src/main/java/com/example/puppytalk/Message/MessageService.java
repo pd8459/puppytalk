@@ -4,13 +4,16 @@ import com.example.puppytalk.Notification.NotificationService;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -56,11 +59,27 @@ public class MessageService {
 
     @Transactional
     public List<MessageDetailDto> getMessagesInConversation(Long conversationId, User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("사용자 정보가 없습니다.");
+        }
+
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("대화방을 찾을 수 없습니다."));
-        if (conversation.getParticipants().stream().noneMatch(p -> p.getId().equals(user.getId()))) {
+
+        Set<User> participants = conversation.getParticipants();
+        if (participants.isEmpty()) {
+        } else {
+            participants.forEach(p -> {
+            });
+        }
+
+        boolean isParticipant = participants.stream()
+                .anyMatch(p -> p.getId().equals(user.getId()));
+
+        if (!isParticipant) {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
+
         List<Message> messages = messageRepository.findAllByConversationOrderByCreatedAtAsc(conversation);
         messages.forEach(message -> {
             if (!message.getSender().getId().equals(user.getId()) && !message.isRead()) {
@@ -77,9 +96,11 @@ public class MessageService {
     public void deleteConversation(Long conversationId, User user) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("대화방을 찾을 수 없습니다."));
-        if (conversation.getParticipants().stream().noneMatch(p -> p.getId().equals(user.getId()))) {
+
+        if (!conversation.getParticipants().contains(user)) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
+
         conversationRepository.delete(conversation);
     }
 }

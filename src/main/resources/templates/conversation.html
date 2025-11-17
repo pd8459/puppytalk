@@ -21,7 +21,6 @@
             max-width: 100%;
             margin: 0;
         }
-
         .message.incoming p { background-color: #e9ecef; }
         .profile-img { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
         #reply-content { height: 38px; line-height: 38px; resize: none; overflow-y: hidden; }
@@ -49,7 +48,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const token = localStorage.getItem('jwt');
     const conversationId = new URLSearchParams(window.location.search).get('id');
     const chatBox = document.getElementById('chat-box');
     const header = document.getElementById('conversation-header');
@@ -61,7 +59,7 @@
     let currentUsername = '';
 
     window.addEventListener('DOMContentLoaded', async () => {
-        if (!token || !conversationId) {
+        if (!conversationId) {
             alert('잘못된 접근입니다.');
             window.location.href = '/main';
             return;
@@ -72,11 +70,18 @@
     async function loadMessages() {
         try {
             const [messagesResponse, profileResponse] = await Promise.all([
-                fetch(`/api/messages/${conversationId}`, { headers: { 'Authorization': 'Bearer ' + token } }),
-                fetch('/api/profile', { headers: { 'Authorization': 'Bearer ' + token } })
+                fetch(`/api/messages/${conversationId}`),
+                fetch('/api/profile')
             ]);
 
-            if (!messagesResponse.ok) throw new Error('메시지를 불러오지 못했습니다.');
+            if (!messagesResponse.ok) {
+                if (messagesResponse.status === 401 || messagesResponse.status === 403) {
+                    alert('로그인이 필요하거나 이 대화방에 접근할 권한이 없습니다.');
+                    window.location.href = '/messages';
+                    return;
+                }
+                throw new Error('메시지를 불러오지 못했습니다.');
+            }
             const messages = await messagesResponse.json();
 
             if (profileResponse.ok) {
@@ -131,7 +136,8 @@
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         } catch (error) {
-            chatBox.innerHTML = `<p class="text-center text-danger">${error.message}</p>`;
+            console.error(error);
+            chatBox.innerHTML = `<p class="text-center text-danger">오류가 발생했습니다.</p>`;
         }
     }
 
@@ -153,7 +159,7 @@
         try {
             const response = await fetch(`/api/messages/${otherUserUsername}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: content })
             });
             if (response.ok) {

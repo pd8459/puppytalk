@@ -26,7 +26,12 @@
                     <a class="nav-link" th:href="@{/profile-edit}">프로필</a>
                 </li>
                 <li class="nav-item" id="notifications-nav-item" style="display: none;">
-                    <a class="nav-link" th:href="@{/notifications}">알림</a>
+                    <a class="nav-link position-relative" th:href="@{/notifications}">
+                        알림
+                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 0.75em;">
+                            <span id="notification-count"></span>
+                        </span>
+                    </a>
                 </li>
                 <li class="nav-item" id="messages-nav-item" style="display: none;">
                     <a class="nav-link" th:href="@{/messages}">메시지</a>
@@ -44,6 +49,9 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const anonymousNav = document.getElementById('anonymous-nav');
@@ -53,6 +61,8 @@
             const notificationsNavItem = document.getElementById('notifications-nav-item');
             const messagesNavItem = document.getElementById('messages-nav-item');
 
+            let stompClient = null;
+
             fetch('/api/profile')
                 .then(res => res.ok ? res.json() : Promise.reject('Not logged in'))
                 .then(user => {
@@ -60,9 +70,11 @@
                     authenticatedNav.style.display = 'block';
                     mypageNavItem.style.display = 'block';
                     profileNavItem.style.display = 'block';
-
                     notificationsNavItem.style.display = 'block';
                     messagesNavItem.style.display = 'block';
+
+                    updateNotificationBadge();
+                    connectWebSocket();
                 })
                 .catch(error => {
                     anonymousNav.style.display = 'block';
@@ -79,6 +91,9 @@
                     fetch('/api/logout', { method: 'POST' })
                         .then(response => {
                             if (response.ok) {
+                                if (stompClient) {
+                                    stompClient.disconnect();
+                                }
                                 alert('로그아웃 되었습니다.');
                                 window.location.reload();
                             } else {
@@ -86,6 +101,47 @@
                             }
                         });
                 });
+            }
+
+            function connectWebSocket() {
+                let socket = new SockJS('/ws-stomp');
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+
+                stompClient.connect({}, function(frame) {
+                    console.log('STOMP Connected: ' + frame);
+
+                    stompClient.subscribe('/user/topic/notifications', function(notification) {
+                        const notificationData = JSON.parse(notification.body);
+
+                        console.log('New notification:', notificationData.message);
+
+                        updateNotificationBadge();
+                    });
+                }, function(error) {
+                    console.error('STOMP Error: ' + error);
+                    setTimeout(connectWebSocket, 5000);
+                });
+            }
+
+            async function updateNotificationBadge() {
+                try {
+                    const response = await fetch('/api/notifications/unread-count');
+                    if (!response.ok) return;
+
+                    const count = await response.json();
+                    const badge = document.getElementById('notification-badge');
+                    const countSpan = document.getElementById('notification-count');
+
+                    if (count > 0) {
+                        countSpan.textContent = count > 9 ? '9+' : count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch unread count:', error);
+                }
             }
         });
     </script>
