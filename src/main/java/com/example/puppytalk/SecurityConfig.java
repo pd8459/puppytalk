@@ -48,7 +48,8 @@ public class SecurityConfig {
                         csp.policyDirectives(
                                 "default-src 'self'; " +
                                         "script-src 'self' 'unsafe-inline' *.kakao.com t1.daumcdn.net cdn.jsdelivr.net uicdn.toast.com; " +
-                                        "img-src 'self' data: *.daumcdn.net; " +
+                                        "img-src 'self' data: https: *.daumcdn.net; " +
+
                                         "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net uicdn.toast.com; " +
                                         "font-src 'self' cdn.jsdelivr.net;"
                         )
@@ -60,7 +61,7 @@ public class SecurityConfig {
                 "/public-profile/**", "/api/users/signup", "/api/users/login", "/api/logout",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
-                "/ws-stomp/**"
+                "/ws-stomp/**","/shop/**", "/api/shop/**"
         };
 
         http.authorizeHttpRequests(authorize -> authorize
