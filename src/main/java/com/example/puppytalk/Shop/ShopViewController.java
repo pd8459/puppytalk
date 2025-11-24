@@ -29,4 +29,9 @@ public class ShopViewController {
         model.addAttribute("productId", id);
         return "shop/detail";
     }
+
+    @GetMapping("/cart")
+    public String cartPage() {
+        return "shop/cart";
+    }
 }
