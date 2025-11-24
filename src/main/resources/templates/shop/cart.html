@@ -71,7 +71,7 @@
                         <strong class="fs-5">총 결제금액</strong>
                         <strong class="fs-5 text-primary" id="final-price">0원</strong>
                     </div>
-                    <button class="btn btn-primary w-100 py-2 fs-5 fw-bold" onclick="alert('결제 기능 연동 예정입니다!')">구매하기</button>
+                    <button id="order-btn" class="btn btn-primary w-100 py-2 fs-5 fw-bold">구매하기</button>
                 </div>
             </div>
         </div>
@@ -188,6 +188,30 @@
         const formatted = totalPrice.toLocaleString() + '원';
         document.getElementById('total-price').textContent = formatted;
         document.getElementById('final-price').textContent = formatted;
+    }
+
+    const orderBtn = document.getElementById('order-btn');
+    if (orderBtn) {
+        orderBtn.addEventListener('click', async () => {
+            if (!confirm('장바구니에 담긴 상품을 모두 주문하시겠습니까?')) return;
+
+            try {
+                const response = await fetch('/api/shop/order', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('주문이 성공적으로 완료되었습니다! 🐶');
+                    window.location.href = '/shop/list';
+                } else {
+                    const errorText = await response.text();
+                    alert('주문 실패: ' + errorText);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('주문 중 오류가 발생했습니다.');
+            }
+        });
     }
 </script>
 </body>

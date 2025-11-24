@@ -34,4 +34,9 @@ public class ShopViewController {
     public String cartPage() {
         return "shop/cart";
     }
+
+    @GetMapping("/orders")
+    public String orderListPage() {
+        return "shop/orders";
+    }
 }
