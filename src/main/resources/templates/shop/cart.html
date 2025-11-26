@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PuppyTalk - 장바구니</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+    <style>
+        .cart-img { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; }
+        .quantity-input { width: 50px; text-align: center; border: 1px solid #ced4da; border-radius: 0; }
+        .btn-qty { border: 1px solid #ced4da; background-color: #fff; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container mt-5 mb-5">
+    <h2 class="mb-4">🛒 장바구니</h2>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-4" style="width: 40%">상품정보</th>
+                            <th scope="col" style="width: 15%">가격</th>
+                            <th scope="col" style="width: 20%">수량</th>
+                            <th scope="col" style="width: 15%">합계</th>
+                            <th scope="col" style="width: 10%"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="cart-list"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="empty-message" class="text-center py-5 d-none">
+                <h4>장바구니가 비어있습니다 텅! 🐶</h4>
+                <a href="/shop/list" class="btn btn-primary mt-3">쇼핑하러 가기</a>
+            </div>
+        </div>
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-4">주문 예상 금액</h5>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>총 상품금액</span><span id="total-price">0원</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>배송비</span><span>0원</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <strong class="fs-5">총 결제금액</strong>
+                        <strong class="fs-5 text-primary" id="final-price">0원</strong>
+                    </div>
+                    <button id="order-btn" class="btn btn-primary w-100 py-2 fs-5 fw-bold">결제하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    window.IMP.init("imp22747340");
+
+    window.addEventListener('DOMContentLoaded', loadCart);
+
+    async function loadCart() {
+        const listContainer = document.getElementById('cart-list');
+        const emptyMessage = document.getElementById('empty-message');
+        try {
+            const response = await fetch('/api/shop/cart');
+            if (response.status === 401 || response.status === 403) {
+                alert('로그인이 필요합니다.'); location.href = '/login'; return;
+            }
+            if (!response.ok) throw new Error('장바구니 로드 실패');
+            const data = await response.json();
+            const items = data.cartItems || [];
+
+            if (items.length === 0) {
+                listContainer.innerHTML = '';
+                emptyMessage.classList.remove('d-none');
+                updateSummary(0);
+                return;
+            }
+            emptyMessage.classList.add('d-none');
+
+            let html = '';
+            items.forEach(item => {
+                const itemTotal = item.totalPrice ? item.totalPrice : (item.price * item.count);
+                html += `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <img src="${item.thumbnailUrl || '/images/no-image.png'}" class="cart-img me-3" onerror="this.src='https://via.placeholder.com/80?text=Img'">
+                                <div class="text-truncate" style="max-width: 200px;">
+                                    <a href="/shop/detail?id=${item.productId}" class="text-decoration-none text-dark fw-bold">${item.productName}</a>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${item.price.toLocaleString()}원</td>
+                        <td>
+                            <div class="input-group input-group-sm" style="width: 100px;">
+                                <button class="btn btn-qty" type="button" onclick="updateQty(${item.cartItemId}, ${item.count - 1})">-</button>
+                                <input type="text" class="form-control quantity-input" value="${item.count}" readonly>
+                                <button class="btn btn-qty" type="button" onclick="updateQty(${item.cartItemId}, ${item.count + 1})">+</button>
+                            </div>
+                        </td>
+                        <td class="fw-bold">${itemTotal.toLocaleString()}원</td>
+                        <td><button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${item.cartItemId})">×</button></td>
+                    </tr>
+                `;
+            });
+            listContainer.innerHTML = html;
+            updateSummary(data.totalOrderPrice);
+        } catch (error) { console.error(error); }
+    }
+
+    async function updateQty(id, count) {
+        if (count < 1) return;
+        try {
+            const response = await fetch(`/api/shop/cart/${id}?count=${count}`, { method: 'PATCH' });
+            if (response.ok) loadCart();
+            else alert('수량 변경 실패');
+        } catch (error) { console.error(error); }
+    }
+
+    async function deleteItem(id) {
+        if(confirm('삭제하시겠습니까?')) {
+            try {
+                const response = await fetch(`/api/shop/cart/${id}`, { method: 'DELETE' });
+                if (response.ok) loadCart();
+                else alert('삭제 실패');
+            } catch (error) { console.error(error); }
+        }
+    }
+
+    function updateSummary(price) {
+        const fmt = price.toLocaleString() + '원';
+        document.getElementById('total-price').textContent = fmt;
+        document.getElementById('final-price').textContent = fmt;
+    }
+
+    const orderBtn = document.getElementById('order-btn');
+    if (orderBtn) {
+        orderBtn.addEventListener('click', async () => {
+            if (!confirm('결제를 진행하시겠습니까?')) return;
+
+            try {
+                const response = await fetch('/api/shop/order', { method: 'POST' });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    alert('주문 생성 실패: ' + errorText);
+                    return;
+                }
+
+                const orderData = await response.json();
+
+                window.IMP.request_pay({
+                    pg: "kakaopay",
+                    pay_method: "card",
+                    merchant_uid: "ORD-" + orderData.orderId + "-" + new Date().getTime(),
+                    name: orderData.orderName,
+                    amount: orderData.totalPrice,
+                    buyer_email: orderData.buyerEmail,
+                    buyer_name: orderData.buyerName,
+                }, async function (rsp) {
+                    if (rsp.success) {
+                        try {
+                            const verifyResponse = await fetch('/api/shop/payment/verify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    imp_uid: rsp.imp_uid,
+                                    merchant_uid: rsp.merchant_uid,
+                                    paid_amount: rsp.paid_amount,
+                                    pay_method: rsp.pay_method || 'card',
+                                    status: rsp.status
+                                })
+                            });
+
+                            if (verifyResponse.ok) {
+                                alert('결제가 완료되었습니다! 🐶');
+                                window.location.href = '/shop/orders';
+                            } else {
+                                const errorText = await verifyResponse.text();
+                                alert('결제 검증 실패: ' + errorText);
+                            }
+                        } catch (e) {
+                            alert('결제 검증 중 오류 발생');
+                        }
+                    } else {
+                        alert('결제 실패: ' + rsp.error_msg);
+                        await fetch(`/api/shop/order/${orderData.orderId}/cancel`, { method: 'POST' });
+                    }
+                });
+
+            } catch (error) {
+                console.error(error);
+                alert('오류가 발생했습니다.');
+            }
+        });
+    }
+</script>
+</body>
+</html>

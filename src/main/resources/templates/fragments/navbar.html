@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" th:fragment="navbar">
+    <div class="container-fluid">
+        <a class="navbar-brand" th:href="@{/main}">🐶 PuppyTalk</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/main}">메인</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/playgrounds}">반려견 놀이터</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/hospitals}">동물병원</a>
+                </li>
+                <li class="nav-item" id="mypage-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/mypage}">마이페이지</a>
+                </li>
+                <li class="nav-item" id="profile-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/profile-edit}">프로필</a>
+                </li>
+                <li class="nav-item" id="notifications-nav-item" style="display: none;">
+                    <a class="nav-link position-relative" th:href="@{/notifications}">
+                        알림
+                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 0.75em;">
+                            <span id="notification-count"></span>
+                        </span>
+                    </a>
+                </li>
+                <li class="nav-item" id="messages-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/messages}">메시지</a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center">
+                <div id="anonymous-nav" style="display: flex;">
+                    <a class="btn btn-outline-light" href="/login">로그인</a>
+                </div>
+                <div id="authenticated-nav" style="display: none;">
+                    <button class="btn btn-light" id="logout-btn">로그아웃</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const anonymousNav = document.getElementById('anonymous-nav');
+            const authenticatedNav = document.getElementById('authenticated-nav');
+            const mypageNavItem = document.getElementById('mypage-nav-item');
+            const profileNavItem = document.getElementById('profile-nav-item');
+            const notificationsNavItem = document.getElementById('notifications-nav-item');
+            const messagesNavItem = document.getElementById('messages-nav-item');
+
+            let stompClient = null;
+
+            fetch('/api/profile')
+                .then(res => res.ok ? res.json() : Promise.reject('Not logged in'))
+                .then(user => {
+                    anonymousNav.style.display = 'none';
+                    authenticatedNav.style.display = 'block';
+                    mypageNavItem.style.display = 'block';
+                    profileNavItem.style.display = 'block';
+                    notificationsNavItem.style.display = 'block';
+                    messagesNavItem.style.display = 'block';
+
+                    updateNotificationBadge();
+                    connectWebSocket();
+                })
+                .catch(error => {
+                    anonymousNav.style.display = 'block';
+                    authenticatedNav.style.display = 'none';
+                    mypageNavItem.style.display = 'none';
+                    profileNavItem.style.display = 'none';
+                    notificationsNavItem.style.display = 'none';
+                    messagesNavItem.style.display = 'none';
+                });
+
+            const logoutButton = document.getElementById('logout-btn');
+            if(logoutButton) {
+                logoutButton.addEventListener('click', () => {
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(response => {
+                            if (response.ok) {
+                                if (stompClient) {
+                                    stompClient.disconnect();
+                                }
+                                alert('로그아웃 되었습니다.');
+                                window.location.reload();
+                            } else {
+                                alert('로그아웃에 실패했습니다.');
+                            }
+                        });
+                });
+            }
+
+            function connectWebSocket() {
+                let socket = new SockJS('/ws-stomp');
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+
+                stompClient.connect({}, function(frame) {
+                    console.log('STOMP Connected: ' + frame);
+
+                    stompClient.subscribe('/user/topic/notifications', function(notification) {
+                        const notificationData = JSON.parse(notification.body);
+
+                        console.log('New notification:', notificationData.message);
+
+                        updateNotificationBadge();
+                    });
+                }, function(error) {
+                    console.error('STOMP Error: ' + error);
+                    setTimeout(connectWebSocket, 5000);
+                });
+            }
+
+            async function updateNotificationBadge() {
+                try {
+                    const response = await fetch('/api/notifications/unread-count');
+                    if (!response.ok) return;
+
+                    const count = await response.json();
+                    const badge = document.getElementById('notification-badge');
+                    const countSpan = document.getElementById('notification-count');
+
+                    if (count > 0) {
+                        countSpan.textContent = count > 9 ? '9+' : count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch unread count:', error);
+                }
+            }
+        });
+    </script>
+</nav>
+
+</body>
+</html>

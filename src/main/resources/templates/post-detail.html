@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PuppyTalk - 게시글 상세</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 id="post-title" class="card-title mb-0"></h2>
+                <div id="buttons-container"></div>
+            </div>
+            <div id="post-meta" class="mt-2"></div>
+            <div class="mt-2">
+                <button id="send-message-to-author-btn" class="btn btn-outline-primary btn-sm">메시지 보내기</button>
+            </div>
+            <hr>
+            <div id="viewer"></div>
+            <div class="mt-4 text-center">
+                <button class="btn btn-outline-danger" id="like-btn"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h5>댓글</h5>
+        <div id="comment-list"></div>
+        <nav class="mt-3">
+            <ul class="pagination pagination-sm justify-content-center" id="comment-pagination"></ul>
+        </nav>
+    </div>
+
+    <div class="mt-4 mb-5">
+        <form id="comment-form">
+            <div class="mb-3">
+                <div class="input-group">
+                    <textarea class="form-control" id="comment-content" rows="3" placeholder="댓글을 입력하세요" required></textarea>
+                    <button type="button" class="btn btn-secondary d-none" id="cancel-reply-btn">답글 취소</button>
+                </div>
+                <input type="hidden" id="parent-comment-id" name="parentCommentId" value="">
+            </div>
+            <button type="submit" class="btn btn-primary">댓글 작성</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="postEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">게시글 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input id="edit-post-title" class="form-control mb-2" placeholder="제목을 입력하세요" />
+                <div id="edit-editor"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="save-post-btn">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="commentEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">댓글 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="edit-comment-content" class="form-control" rows="5"></textarea>
+                <input type="hidden" id="edit-comment-id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="save-comment-btn">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="messageSendModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="message-modal-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="message-content" class="form-control" rows="5" placeholder="메시지를 입력하세요..."></textarea>
+                <input type="hidden" id="message-receiver-username">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="send-message-submit-btn">보내기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const postId = new URLSearchParams(window.location.search).get('id');
+    let postDataCache = null;
+    let currentUserCache = null;
+    let currentCommentPage = 0;
+
+    let postEditEditor;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        postEditEditor = new toastui.Editor({
+            el: document.querySelector('#edit-editor'),
+            height: '400px',
+            initialEditType: 'markdown',
+            previewStyle: 'vertical',
+            hooks: {
+                addImageBlobHook: async (blob, callback) => {
+                    const formData = new FormData();
+                    formData.append('image', blob);
+                    try {
+                        const response = await fetch('/api/images', { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error('이미지 업로드 실패');
+                        const data = await response.json();
+                        callback(data.url, 'image');
+                    } catch (error) {
+                        alert('이미지 업로드에 실패했습니다.');
+                    }
+                }
+            }
+        });
+
+        await fetchCurrentUser();
+        await fetchPostDetail();
+        await fetchComments(0);
+
+        document.getElementById('comment-form').addEventListener('submit', handleCommentSubmit);
+        document.getElementById('save-post-btn').addEventListener('click', handlePostSave);
+        document.getElementById('save-comment-btn').addEventListener('click', handleCommentSave);
+        document.getElementById('cancel-reply-btn').addEventListener('click', cancelReply);
+    });
+
+    async function fetchCurrentUser() {
+        try {
+            const response = await fetch('/api/profile');
+            if (response.ok) {
+                currentUserCache = await response.json();
+            }
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+        }
+    }
+
+    async function fetchPostDetail() {
+        try {
+            const response = await fetch(`/api/posts/${postId}`);
+            if (!response.ok) throw new Error('게시글을 불러올 수 없습니다.');
+
+            postDataCache = await response.json();
+            renderPostDetails(postDataCache);
+            setupActionButtons(postDataCache);
+        } catch (error) {
+            console.error('Error fetching post detail:', error);
+            document.querySelector('.container').innerHTML = `<h2>${error.message}</h2>`;
+        }
+    }
+
+    function renderPostDetails(postData) {
+        document.title = `PuppyTalk - ${postData.title}`;
+        document.getElementById('post-title').textContent = postData.title;
+
+        const formattedDate = new Date(postData.createdAt).toLocaleString('ko-KR');
+        const postMeta = document.getElementById('post-meta');
+        const postProfileImage = postData.authorProfileImageUrl || '/images/default_profile.png';
+
+        postMeta.innerHTML = `
+            <div class="d-flex align-items-center">
+                <img src="${postProfileImage}" class="rounded-circle" width="32" height="32" style="object-fit: cover; margin-right: 10px;">
+                <div>
+                    <strong><a href="/public-profile/${postData.authorUsername}" class="text-decoration-none text-dark">${postData.authorNickname}</a></strong>
+                    <div class="text-muted" style="font-size: 0.9em;">작성일: ${formattedDate}</div>
+                </div>
+            </div>`;
+
+        const viewerEl = document.getElementById('viewer');
+        viewerEl.innerHTML = '';
+        new toastui.Editor.factory({
+            el: viewerEl,
+            viewer: true,
+            initialValue: postData.content
+        });
+    }
+
+    function setupActionButtons(postData) {
+        const buttonsContainer = document.getElementById('buttons-container');
+        buttonsContainer.innerHTML = '';
+        if (currentUserCache && currentUserCache.username === postData.authorUsername) {
+            buttonsContainer.innerHTML = `
+                <div>
+                    <button id="edit-post-btn" class="btn btn-secondary btn-sm">수정</button>
+                    <button id="delete-post-btn" class="btn btn-danger btn-sm ms-1">삭제</button>
+                </div>`;
+            document.getElementById('edit-post-btn').addEventListener('click', openPostEditModal);
+            document.getElementById('delete-post-btn').addEventListener('click', deletePost);
+        }
+
+        const likeButton = document.getElementById('like-btn');
+        likeButton.className = postData.isLiked ? 'btn btn-danger' : 'btn btn-outline-danger';
+        likeButton.innerHTML = `${postData.isLiked ? '❤️ Liked' : '♡ Like'} <span class="badge bg-light text-dark ms-2">${postData.likeCount}</span>`;
+        likeButton.onclick = togglePostLike;
+
+        setupMessageButtons();
+    }
+
+    function setupMessageButtons() {
+        const messageModalEl = document.getElementById('messageSendModal');
+        if (!messageModalEl) return;
+        const messageModal = new bootstrap.Modal(messageModalEl);
+
+        const openMessageModal = (receiverUsername, receiverNickname) => {
+            if (!currentUserCache) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/login?redirectURL=' + encodeURIComponent(window.location.href);
+                return;
+            }
+            document.getElementById('message-modal-title').textContent = `${receiverNickname}님에게 메시지 보내기`;
+            document.getElementById('message-receiver-username').value = receiverUsername;
+            document.getElementById('message-content').value = '';
+            messageModal.show();
+        };
+
+        const authorMessageBtn = document.getElementById('send-message-to-author-btn');
+        if (currentUserCache && postDataCache && currentUserCache.username !== postDataCache.authorUsername) {
+            authorMessageBtn.style.display = 'inline-block';
+            authorMessageBtn.onclick = () => openMessageModal(postDataCache.authorUsername, postDataCache.authorNickname);
+        } else {
+            authorMessageBtn.style.display = 'none';
+        }
+
+        document.querySelectorAll('.send-message-to-commenter-btn').forEach(btn => {
+            const receiverUsername = btn.dataset.username;
+            const receiverNickname = btn.dataset.nickname;
+            if (currentUserCache && currentUserCache.username !== receiverUsername) {
+                btn.style.display = 'inline-block';
+                btn.onclick = () => openMessageModal(receiverUsername, receiverNickname);
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+
+        document.getElementById('send-message-submit-btn').onclick = async () => {
+            const content = document.getElementById('message-content').value;
+            const receiverUsername = document.getElementById('message-receiver-username').value;
+            if (!content.trim()) {
+                alert('내용을 입력해주세요.');
+                return;
+            }
+            try {
+                const response = await fetch(`/api/messages/${receiverUsername}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                if (response.ok) {
+                    alert('메시지를 성공적으로 보냈습니다.');
+                    messageModal.hide();
+                } else {
+                    const errorText = await response.text();
+                    alert(`메시지 보내기에 실패했습니다: ${errorText}`);
+                }
+            } catch (error) {
+                alert('오류가 발생했습니다.');
+            }
+        };
+    }
+
+    async function fetchComments(page = 0) {
+        currentCommentPage = page;
+        try {
+            const response = await fetch(`/api/posts/${postId}/comments?page=${page}&size=5`);
+            if (!response.ok) throw new Error('댓글을 불러올 수 없습니다.');
+            const pageData = await response.json();
+            renderComments(pageData.content);
+            renderCommentPagination(pageData);
+            setupMessageButtons();
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+            document.getElementById('comment-list').innerHTML = '<div class="alert alert-danger">댓글을 불러오는데 실패했습니다.</div>';
+        }
+    }
+
+    function renderComments(comments) {
+        const commentList = document.getElementById('comment-list');
+        commentList.innerHTML = '';
+        comments.forEach(comment => {
+            commentList.appendChild(createCommentElement(comment));
+        });
+    }
+
+    function createCommentElement(comment, isChild = false) {
+        const commentEl = document.createElement('div');
+        commentEl.className = isChild ? '' : 'card card-body mb-2';
+        const commentDate = new Date(comment.createdAt).toLocaleString('ko-KR');
+        let buttonsHtml = '';
+        if (currentUserCache && currentUserCache.username === comment.authorUsername) {
+            buttonsHtml = `<button class="btn btn-secondary btn-sm" onclick="openCommentEditModal(${comment.id}, \`${comment.content}\`)">수정</button>
+                           <button class="btn btn-danger btn-sm ms-1" onclick="deleteComment(${comment.id})">삭제</button>`;
+        }
+        const likeBtnClass = comment.isLiked ? 'btn-danger' : 'btn-outline-danger';
+        const likeIcon = comment.isLiked ? '❤️' : '♡';
+        const likeText = comment.isLiked ? 'Liked' : 'Like';
+        const commentProfileImage = comment.authorProfileImageUrl || '/images/default_profile.png';
+        commentEl.innerHTML = `
+            <div class="d-flex align-items-start">
+                <img src="${commentProfileImage}" class="rounded-circle" width="40" height="40" style="object-fit: cover; margin-right: 15px;">
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong><a href="/public-profile/${comment.authorUsername}" class="text-decoration-none text-dark">${comment.authorNickname}</a></strong>
+                            <small class="text-muted ms-2">${commentDate}</small>
+                        </div>
+                        <div class="text-nowrap">${buttonsHtml}</div>
+                    </div>
+                    <p style="white-space: pre-wrap; margin-top: 0.5rem; margin-bottom: 0.5rem;">${comment.content}</p>
+                    <div class="text-end">
+                        <button class="btn btn-sm btn-outline-info send-message-to-commenter-btn" data-username="${comment.authorUsername}" data-nickname="${comment.authorNickname}">메시지</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="setReplyTarget(${comment.id}, '${comment.authorNickname}')">답글</button>
+                        <button class="btn ${likeBtnClass} btn-sm" onclick="toggleCommentLike(${comment.id})">
+                            ${likeIcon} ${likeText} <span class="badge bg-light text-dark ms-1">${comment.likeCount}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="children-container" style="margin-left: 55px; margin-top: 10px;"></div>`;
+        if (comment.children && comment.children.length > 0) {
+            const childrenContainer = commentEl.querySelector('.children-container');
+            comment.children.forEach(child => {
+                childrenContainer.appendChild(createCommentElement(child, true));
+            });
+        }
+        return commentEl;
+    }
+
+    function renderCommentPagination(pageData) {
+        const paginationContainer = document.getElementById('comment-pagination');
+        paginationContainer.innerHTML = '';
+        if (pageData.totalPages <= 1) return;
+        const ul = document.createElement('ul');
+        ul.className = 'pagination justify-content-center';
+        for (let i = 0; i < pageData.totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === pageData.number ? 'active' : ''}`;
+            const a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = i + 1;
+            a.onclick = (e) => { e.preventDefault(); fetchComments(i); };
+            li.appendChild(a);
+            ul.appendChild(li);
+        }
+        paginationContainer.appendChild(ul);
+    }
+
+    function setReplyTarget(parentId, authorNickname) {
+        document.getElementById('parent-comment-id').value = parentId;
+        const commentContent = document.getElementById('comment-content');
+        commentContent.value = '';
+        commentContent.placeholder = `@${authorNickname} 님에게 답글 남기기`;
+        document.getElementById('cancel-reply-btn').classList.remove('d-none');
+        commentContent.focus();
+    }
+
+    function cancelReply() {
+        document.getElementById('parent-comment-id').value = '';
+        document.getElementById('comment-content').placeholder = '댓글을 입력하세요';
+        document.getElementById('cancel-reply-btn').classList.add('d-none');
+    }
+
+    async function handleCommentSubmit(event) {
+        event.preventDefault();
+        if (!currentUserCache) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
+        const content = document.getElementById('comment-content').value;
+        const parentId = document.getElementById('parent-comment-id').value || null;
+        const url = parentId ? `/api/comments/${parentId}/replies` : `/api/posts/${postId}/comments`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            if (response.ok) { cancelReply(); fetchComments(currentCommentPage); }
+            else { alert('댓글 작성에 실패했습니다.'); }
+        } catch (error) { alert('댓글 작성 중 오류가 발생했습니다.'); }
+    }
+
+    async function handlePostSave() {
+        const title = document.getElementById('edit-post-title').value;
+        const content = postEditEditor.getMarkdown();
+        try {
+            const response = await fetch(`/api/posts/${postId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            });
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('postEditModal')).hide();
+                fetchPostDetail();
+            } else { alert('게시글 수정에 실패했습니다.'); }
+        } catch (error) { alert('게시글 수정 중 오류가 발생했습니다.'); }
+    }
+
+    async function handleCommentSave() {
+        const commentId = document.getElementById('edit-comment-id').value;
+        const content = document.getElementById('edit-comment-content').value;
+        try {
+            const response = await fetch(`/api/comments/${commentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('commentEditModal')).hide();
+                fetchComments(currentCommentPage);
+            } else { alert('댓글 수정에 실패했습니다.'); }
+        } catch (error) {
+            alert('댓글 수정 중 오류가 발생했습니다.');
+        }
+    }
+
+    async function togglePostLike() {
+        if (!currentUserCache) { alert('로그인이 필요합니다.'); window.location.href = '/login'; return; }
+        try {
+            const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
+            if (response.ok) { fetchPostDetail(); }
+            else { alert('좋아요 처리에 실패했습니다.'); }
+        } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
+    }
+
+    async function toggleCommentLike(commentId) {
+        if (!currentUserCache) { alert('로그인이 필요합니다.'); return; }
+        try {
+            const response = await fetch(`/api/comments/${commentId}/like`, { method: 'POST' });
+            if (response.ok) { fetchComments(currentCommentPage); }
+            else { alert('좋아요 처리에 실패했습니다.'); }
+        } catch (error) { alert('좋아요 처리 중 오류가 발생했습니다.'); }
+    }
+
+    function openPostEditModal() {
+        if (!postDataCache) return;
+        document.getElementById('edit-post-title').value = postDataCache.title;
+        postEditEditor.setMarkdown(postDataCache.content);
+        new bootstrap.Modal(document.getElementById('postEditModal')).show();
+    }
+
+    async function deletePost() {
+        if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+        try {
+            const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('게시글이 삭제되었습니다.');
+                window.location.href = '/main';
+            } else { alert('게시글 삭제에 실패했습니다.'); }
+        } catch (error) { alert('게시글 삭제 중 오류가 발생했습니다.'); }
+    }
+
+    function openCommentEditModal(commentId, currentContent) {
+        document.getElementById('edit-comment-id').value = commentId;
+        document.getElementById('edit-comment-content').value = currentContent;
+        new bootstrap.Modal(document.getElementById('commentEditModal')).show();
+    }
+
+    async function deleteComment(commentId) {
+        if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
+        try {
+            const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
+            if (response.ok) { fetchComments(currentCommentPage); }
+            else { alert('댓글 삭제에 실패했습니다.'); }
+        } catch (error) { alert('댓글 삭제 중 오류가 발생했습니다.'); }
+    }
+</script>
+</body>
+</html>

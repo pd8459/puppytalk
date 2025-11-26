@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PuppyTalk - 새 글 작성</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container mt-4">
+    <h2>새 글 작성</h2>
+    <form id="post-form">
+        <div class="mb-3">
+            <label for="post-title" class="form-label">제목</label>
+            <input type="text" class="form-control" id="post-title" placeholder="제목을 입력하세요" required>
+        </div>
+        <div class="mb-3">
+            <label for="editor" class="form-label">내용</label>
+            <div id="editor"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">작성 완료</button>
+    </form>
+</div>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script>
+    const editor = new toastui.Editor({
+        el: document.querySelector('#editor'),
+        height: '500px',
+        initialEditType: 'markdown',
+        previewStyle: 'vertical',
+        hooks: {
+            addImageBlobHook: async (blob, callback) => {
+                const formData = new FormData();
+                formData.append('image', blob);
+                try {
+                    // [수정] 헤더 삭제
+                    const response = await fetch('/api/images', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (!response.ok) throw new Error('이미지 업로드 실패');
+                    const data = await response.json();
+                    callback(data.url, 'image');
+                } catch (error) {
+                    alert('이미지 업로드에 실패했습니다.');
+                }
+            }
+        }
+    });
+
+    document.getElementById('post-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const title = document.getElementById('post-title').value;
+        const content = editor.getMarkdown();
+
+        if (!title.trim() || !content.trim()) {
+            alert('제목과 내용을 모두 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            });
+
+            if (response.ok) {
+                alert('게시글이 성공적으로 등록되었습니다.');
+                window.location.href = '/main';
+            } else {
+                if (response.status === 401 || response.status === 403) {
+                    alert('글을 작성하려면 로그인이 필요합니다.');
+                    window.location.href = '/login';
+                } else {
+                    alert('게시글 등록에 실패했습니다.');
+                }
+            }
+        } catch (error) {
+            alert('게시글 등록 중 오류가 발생했습니다.');
+        }
+    });
+</script>
+</body>
+</html>
