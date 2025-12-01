@@ -36,26 +36,31 @@ public class UserController {
 
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletResponse response) {
-        // 쿠키의 값을 비우고 유효기간을 0으로 설정하여 삭제합니다.
-        Cookie cookie = new Cookie(JwtUtil.AUTHORIZATION_HEADER, ""); // 값을 빈 문자열로 설정
+        Cookie cookie = new Cookie(JwtUtil.AUTHORIZATION_HEADER, "");
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        cookie.setHttpOnly(true); // 생성 시와 동일한 HttpOnly 속성 설정
+        cookie.setHttpOnly(true);
         response.addCookie(cookie);
         return ResponseEntity.ok("로그아웃 되었습니다.");
     }
 
-    @GetMapping("/users/me")
+    @GetMapping("/profile")
     public ResponseEntity<UserInfoDto> getMyInfo(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        String nickname = userDetails.getUser().getNickname();
-        return ResponseEntity.ok(new UserInfoDto(nickname));
+        return ResponseEntity.ok(new UserInfoDto(userDetails.getUser()));
     }
 
     @Getter
-    class UserInfoDto {
+    static class UserInfoDto { // DTO
+        private String username;
         private String nickname;
-        public UserInfoDto(String nickname) {
-            this.nickname = nickname;
+        private String profileImageUrl;
+        private UserRole role;
+
+        public UserInfoDto(User user) {
+            this.username = user.getUsername();
+            this.nickname = user.getNickname();
+            this.profileImageUrl = user.getProfileImageUrl();
+            this.role = user.getRole();
         }
     }
 

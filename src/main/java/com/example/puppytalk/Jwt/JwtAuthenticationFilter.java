@@ -30,18 +30,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String tokenValue = jwtUtil.getTokenFromRequest(request);
 
         if (StringUtils.hasText(tokenValue)) {
-            if (jwtUtil.validateToken(tokenValue)) {
-                Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
+            String token = jwtUtil.substringToken(tokenValue);
+
+            if (jwtUtil.validateToken(token)) {
+                Claims info = jwtUtil.getUserInfoFromToken(token);
                 try {
                     setAuthentication(info.getSubject());
                 } catch (Exception e) {
                     log.error("Authentication error: {}", e.getMessage());
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
             } else {
                 log.error("Invalid JWT token");
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
         }
@@ -51,9 +51,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public void setAuthentication(String username) {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        Authentication authentication = createAuthentication(username);
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
+    }
+
+    private Authentication createAuthentication(String username) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
 }

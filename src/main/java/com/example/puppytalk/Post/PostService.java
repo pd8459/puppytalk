@@ -2,6 +2,7 @@ package com.example.puppytalk.Post;
 
 import com.example.puppytalk.FileUploadService;
 import com.example.puppytalk.User.User;
+import com.example.puppytalk.User.UserRole;
 import com.example.puppytalk.image.Image;
 import com.example.puppytalk.image.ImageRepository;
 import com.example.puppytalk.like.CommentLikeRepository;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @Service
 @RequiredArgsConstructor
@@ -62,11 +65,11 @@ public class PostService {
     }
 
     @Transactional
-    public void deletePost(Long postId, User user) {
-        Post post = findPost(postId);
-
-        if(!post.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException("게시글 삭제 권한이 없습니다.");
+    public void deletePost(Long id, User user) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+        if (!post.getUser().getId().equals(user.getId()) && user.getRole() != UserRole.ADMIN) {
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
 
         postRepository.delete(post);

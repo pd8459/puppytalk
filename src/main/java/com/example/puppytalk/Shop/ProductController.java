@@ -46,4 +46,10 @@ public class ProductController {
     public ResponseEntity<List<ProductResponseDto>> getRecommendedProductsBySize(@RequestParam DogSize size) {
         return ResponseEntity.ok(productService.getProductsBySize(size));
     }
+
+    @DeleteMapping("/products/{productId}")
+    public ResponseEntity<String> deleteProduct(@PathVariable Long productId) {
+        productService.deleteProduct(productId);
+        return ResponseEntity.ok("상품이 삭제(숨김) 처리되었습니다.");
+    }
 }

@@ -1,26 +1,21 @@
 package com.example.puppytalk.User;
 
+import com.example.puppytalk.Shop.BaseTimeEntity;
 import com.example.puppytalk.pet.Pet;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import jakarta.persistence.Table;
 import org.hibernate.annotations.Where;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EqualsAndHashCode(of = "id")
+@EqualsAndHashCode(of = "id", callSuper = false)
 @Table(name = "users")
 //@Where(clause = "is_deleted = false")
-public class User {
+public class User extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,26 +30,36 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String nickname;
 
-    @Column(nullable = true, unique = true, length = 100)
+    @Column(unique = true, length = 100)
     private String email;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
 
     private String profileImageUrl;
 
-    public void updateNickname(String newNickname) {
-        this.nickname = newNickname;
+    @Column(nullable = false)
+    private boolean isDeleted = false;
+
+    @Enumerated(EnumType.STRING)
+    private UserStatus status = UserStatus.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    private UserRole role = UserRole.USER;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Pet> pets = new ArrayList<>();
+
+    @Builder
+    public User(String username, String password, String nickname, String email, String profileImageUrl, UserRole role, UserStatus status) {
+        this.username = username;
+        this.password = password;
+        this.nickname = nickname;
+        this.email = email;
+        this.profileImageUrl = profileImageUrl;
+        if (role != null) this.role = role;
+        if (status != null) this.status = status;
     }
 
-    public void setPassword(String newPassword) {
-        this.password = password;
+    public void updateNickname(String newNickname) {
+        this.nickname = newNickname;
     }
 
     public void updatePassword(String newPassword) {
@@ -65,14 +70,15 @@ public class User {
         this.profileImageUrl = profileImageUrl;
     }
 
-    @Column(nullable = false)
-    private boolean isDeleted;
-
     public void withdraw() {
         this.isDeleted = true;
     }
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Pet> pets = new ArrayList<>();
+    public void promoteToAdmin() {
+        this.role = UserRole.ADMIN;
+    }
 
+    public void updateStatus(UserStatus status) {
+        this.status = status;
+    }
 }

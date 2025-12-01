@@ -50,21 +50,21 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public String login(UserLoginRequestDto requestDto) {
-
-        User user = userRepository.findByUsername(requestDto.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
-
-        if (user.isDeleted()) {
-            throw new IllegalArgumentException("이미 탈퇴한 회원입니다.");
-        }
+        User user = userRepository.findByUsername(requestDto.getUsername()).orElseThrow(
+                () -> new IllegalArgumentException("등록된 사용자가 없습니다.")
+        );
 
         if (!passwordEncoder.matches(requestDto.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        return jwtUtil.createToken(user.getUsername());
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new IllegalArgumentException("운영정책 위반으로 정지된 계정입니다. 관리자에게 문의하세요.");
+        }
+
+        return jwtUtil.createToken(user.getUsername(), user.getRole());
     }
 
     @Transactional(readOnly = true)

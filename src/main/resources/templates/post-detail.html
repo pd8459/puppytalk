@@ -203,13 +203,21 @@
     function setupActionButtons(postData) {
         const buttonsContainer = document.getElementById('buttons-container');
         buttonsContainer.innerHTML = '';
-        if (currentUserCache && currentUserCache.username === postData.authorUsername) {
-            buttonsContainer.innerHTML = `
-                <div>
-                    <button id="edit-post-btn" class="btn btn-secondary btn-sm">수정</button>
-                    <button id="delete-post-btn" class="btn btn-danger btn-sm ms-1">삭제</button>
-                </div>`;
-            document.getElementById('edit-post-btn').addEventListener('click', openPostEditModal);
+        if (currentUserCache && (currentUserCache.username === postData.authorUsername || currentUserCache.role === 'ADMIN')) {
+
+            let html = '';
+
+            if (currentUserCache.username === postData.authorUsername) {
+                html += `<button id="edit-post-btn" class="btn btn-secondary btn-sm">수정</button>`;
+            }
+
+            html += `<button id="delete-post-btn" class="btn btn-danger btn-sm ms-1">삭제</button>`;
+
+            buttonsContainer.innerHTML = `<div>${html}</div>`;
+
+            const editBtn = document.getElementById('edit-post-btn');
+            if(editBtn) editBtn.addEventListener('click', openPostEditModal);
+
             document.getElementById('delete-post-btn').addEventListener('click', deletePost);
         }
 

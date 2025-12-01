@@ -19,6 +19,24 @@
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/hospitals}">동물병원</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/shop/list}">쇼핑몰</a>
+                </li>
+
+                <li class="nav-item" id="admin-dashboard-nav-item" style="display: none;">
+                    <a class="nav-link text-warning fw-bold" th:href="@{/admin}">대시보드</a>
+                </li>
+                <li class="nav-item" id="shop-register-nav-item" style="display: none;">
+                    <a class="nav-link text-warning" th:href="@{/shop/register}">상품등록</a>
+                </li>
+
+                <li class="nav-item" id="cart-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/shop/cart}">장바구니</a>
+                </li>
+                <li class="nav-item" id="order-history-nav-item" style="display: none;">
+                    <a class="nav-link" th:href="@{/shop/orders}">구매내역</a>
+                </li>
+
                 <li class="nav-item" id="mypage-nav-item" style="display: none;">
                     <a class="nav-link" th:href="@{/mypage}">마이페이지</a>
                 </li>
@@ -56,10 +74,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             const anonymousNav = document.getElementById('anonymous-nav');
             const authenticatedNav = document.getElementById('authenticated-nav');
+
             const mypageNavItem = document.getElementById('mypage-nav-item');
             const profileNavItem = document.getElementById('profile-nav-item');
             const notificationsNavItem = document.getElementById('notifications-nav-item');
             const messagesNavItem = document.getElementById('messages-nav-item');
+
+            const cartNavItem = document.getElementById('cart-nav-item');
+            const orderHistoryNavItem = document.getElementById('order-history-nav-item');
+
+            const adminDashboardNavItem = document.getElementById('admin-dashboard-nav-item');
+            const shopRegisterNavItem = document.getElementById('shop-register-nav-item');
 
             let stompClient = null;
 
@@ -68,10 +93,18 @@
                 .then(user => {
                     anonymousNav.style.display = 'none';
                     authenticatedNav.style.display = 'block';
+
                     mypageNavItem.style.display = 'block';
                     profileNavItem.style.display = 'block';
                     notificationsNavItem.style.display = 'block';
                     messagesNavItem.style.display = 'block';
+                    cartNavItem.style.display = 'block';
+                    orderHistoryNavItem.style.display = 'block';
+
+                    if (user.role === 'ADMIN') {
+                        adminDashboardNavItem.style.display = 'block';
+                        shopRegisterNavItem.style.display = 'block';
+                    }
 
                     updateNotificationBadge();
                     connectWebSocket();
@@ -79,10 +112,15 @@
                 .catch(error => {
                     anonymousNav.style.display = 'block';
                     authenticatedNav.style.display = 'none';
+
                     mypageNavItem.style.display = 'none';
                     profileNavItem.style.display = 'none';
                     notificationsNavItem.style.display = 'none';
                     messagesNavItem.style.display = 'none';
+                    cartNavItem.style.display = 'none';
+                    orderHistoryNavItem.style.display = 'none';
+                    adminDashboardNavItem.style.display = 'none';
+                    shopRegisterNavItem.style.display = 'none';
                 });
 
             const logoutButton = document.getElementById('logout-btn');
@@ -109,17 +147,10 @@
                 stompClient.debug = null;
 
                 stompClient.connect({}, function(frame) {
-                    console.log('STOMP Connected: ' + frame);
-
                     stompClient.subscribe('/user/topic/notifications', function(notification) {
-                        const notificationData = JSON.parse(notification.body);
-
-                        console.log('New notification:', notificationData.message);
-
                         updateNotificationBadge();
                     });
                 }, function(error) {
-                    console.error('STOMP Error: ' + error);
                     setTimeout(connectWebSocket, 5000);
                 });
             }
@@ -140,7 +171,7 @@
                         badge.style.display = 'none';
                     }
                 } catch (error) {
-                    console.error('Failed to fetch unread count:', error);
+                    console.error(error);
                 }
             }
         });
