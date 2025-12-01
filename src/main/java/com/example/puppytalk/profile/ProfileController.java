@@ -18,12 +18,6 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    @GetMapping
-    public UserInfoResponseDto getCurrentUserProfile(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        User user = userDetails.getUser();
-        return new UserInfoResponseDto(user);
-    }
-
     @PatchMapping("/password")
     public ResponseEntity<String> changePassword(
             @AuthenticationPrincipal UserDetailsImpl userDetails,

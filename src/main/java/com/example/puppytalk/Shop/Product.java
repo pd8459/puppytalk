@@ -69,10 +69,17 @@ public class Product extends BaseTimeEntity {
         }
     }
 
-    public void updateProduct(String name, int price, String description, String thumbnailUrl) {
+    public void updateProduct(String name, int price, String description, String thumbnailUrl, int stockQuantity, String targetBreed, DogSize recommendedSize) {
         this.name = name;
         this.price = price;
         this.description = description;
         this.thumbnailUrl = thumbnailUrl;
+        this.stockQuantity = stockQuantity;
+        this.targetBreed = targetBreed;
+        this.recommendedSize = recommendedSize;
+    }
+
+    public void changeStatus(ProductStatus status) {
+        this.status = status;
     }
 }

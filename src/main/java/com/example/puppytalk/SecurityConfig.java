@@ -51,8 +51,8 @@ public class SecurityConfig {
                                         "img-src 'self' data: https: *.daumcdn.net; " +
                                         "connect-src 'self' https: ws: wss:; " +
                                         "frame-src 'self' https:; " +
-                                        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net uicdn.toast.com; " +
-                                        "font-src 'self' cdn.jsdelivr.net;"
+                                        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net uicdn.toast.com https://cdnjs.cloudflare.com; " +
+                                        "font-src 'self' cdn.jsdelivr.net https://cdnjs.cloudflare.com;"
                         )
                 )
         );
@@ -62,11 +62,13 @@ public class SecurityConfig {
                 "/public-profile/**", "/api/users/signup", "/api/users/login", "/api/logout",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
-                "/ws-stomp/**", "/shop/**", "/api/shop/**"
+                "/ws-stomp/**", "/shop/**", "/api/shop/**","/admin/**", "/admin/api/**",
         };
 
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                .requestMatchers("/admin/**", "/admin/api/**").hasAuthority("ADMIN")
+                .requestMatchers("/shop/admin/**", "/shop/register").hasAuthority("ADMIN")
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                 .anyRequest().authenticated()

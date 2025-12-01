@@ -24,12 +24,20 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다. id=" + productId));
 
+        System.out.println("[DEBUG] 수정 요청 데이터: " + requestDto.getName() + ", " + requestDto.getPrice());
         product.updateProduct(
                 requestDto.getName(),
                 requestDto.getPrice(),
                 requestDto.getDescription(),
-                requestDto.getThumbnailUrl()
+                requestDto.getThumbnailUrl(),
+                requestDto.getStockQuantity(),
+                requestDto.getTargetBreed(),
+                requestDto.getRecommendedSize()
         );
+
+        productRepository.save(product);
+
+        System.out.println("[DEBUG] 저장 완료!");
     }
 
     @Transactional(readOnly = true)
@@ -58,5 +66,12 @@ public class ProductService {
         return productRepository.findByRecommendedSizeAndStatus(size, ProductStatus.ON_SALE).stream()
                 .map(ProductResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품이 없습니다."));
+        product.changeStatus(ProductStatus.HIDDEN);
     }
 }
