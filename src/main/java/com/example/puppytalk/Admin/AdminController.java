@@ -78,4 +78,9 @@ public class AdminController {
         model.addAttribute("productId", id);
         return "admin/product-edit";
     }
+
+    @GetMapping("/inquiries")
+    public String adminInquiryListPage() {
+        return "admin/inquiries";
+    }
 }

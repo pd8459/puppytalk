@@ -2,18 +2,16 @@ package com.example.puppytalk.Message;
 
 import com.example.puppytalk.Notification.NotificationService;
 import com.example.puppytalk.User.User;
+import com.example.puppytalk.User.UserRole; // Role 임포트 필수
 import com.example.puppytalk.User.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -22,6 +20,7 @@ public class MessageService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public MessageResponseDto sendMessage(User sender, String receiverUsername, MessageSendRequestDto requestDto) {
@@ -39,44 +38,21 @@ public class MessageService {
         Message savedMessage = messageRepository.save(message);
 
         notificationService.sendNewMessageNotification(savedMessage);
+        MessageDetailDto messageDto = new MessageDetailDto(savedMessage, sender);
+        messagingTemplate.convertAndSend("/topic/chat/" + conversation.getId(), messageDto);
 
         return new MessageResponseDto(savedMessage);
     }
 
-    @Transactional(readOnly = true)
-    public List<ConversationResponseDto> getConversations(User user) {
-        List<Conversation> conversations = conversationRepository.findByParticipantsContains(user);
-
-        return conversations.stream()
-                .map(conversation -> new ConversationResponseDto(conversation, user))
-                .sorted((c1, c2) -> {
-                    if (c1.getLastMessageCreatedAt() == null) return 1;
-                    if (c2.getLastMessageCreatedAt() == null) return -1;
-                    return c2.getLastMessageCreatedAt().compareTo(c1.getLastMessageCreatedAt());
-                })
-                .toList();
-    }
-
     @Transactional
     public List<MessageDetailDto> getMessagesInConversation(Long conversationId, User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("사용자 정보가 없습니다.");
-        }
-
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("대화방을 찾을 수 없습니다."));
 
-        Set<User> participants = conversation.getParticipants();
-        if (participants.isEmpty()) {
-        } else {
-            participants.forEach(p -> {
-            });
-        }
+        boolean isParticipant = conversation.getParticipants().contains(user);
+        boolean isAdmin = user.getRole() == UserRole.ADMIN;
 
-        boolean isParticipant = participants.stream()
-                .anyMatch(p -> p.getId().equals(user.getId()));
-
-        if (!isParticipant) {
+        if (!isParticipant && !isAdmin) {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
 
@@ -93,14 +69,48 @@ public class MessageService {
     }
 
     @Transactional
+    public Long createOrGetConversation(User sender, String receiverUsername) {
+        User receiver = userRepository.findByUsername(receiverUsername)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        if (sender.getId().equals(receiver.getId())) {
+            throw new IllegalArgumentException("자신에게는 문의할 수 없습니다.");
+        }
+
+        Conversation conversation = conversationRepository.findByParticipants(sender, receiver)
+                .or(() -> conversationRepository.findByParticipants(receiver, sender))
+                .orElseGet(() -> {
+                    Conversation newConversation = new Conversation(Set.of(sender, receiver));
+                    return conversationRepository.save(newConversation);
+                });
+
+        return conversation.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConversationResponseDto> getConversations(User user) {
+        List<Conversation> conversations = conversationRepository.findByParticipantsContains(user);
+        return conversations.stream()
+                .map(conversation -> new ConversationResponseDto(conversation, user))
+                .sorted((c1, c2) -> {
+                    if (c1.getLastMessageCreatedAt() == null) return 1;
+                    if (c2.getLastMessageCreatedAt() == null) return -1;
+                    return c2.getLastMessageCreatedAt().compareTo(c1.getLastMessageCreatedAt());
+                })
+                .toList();
+    }
+
+    @Transactional
     public void deleteConversation(Long conversationId, User user) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("대화방을 찾을 수 없습니다."));
 
-        if (!conversation.getParticipants().contains(user)) {
+        boolean isParticipant = conversation.getParticipants().contains(user);
+        boolean isAdmin = user.getRole() == UserRole.ADMIN;
+
+        if (!isParticipant && !isAdmin) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
-
         conversationRepository.delete(conversation);
     }
 }

@@ -37,7 +37,7 @@ public class UserDetailsImpl implements UserDetails {
         if (role == null) {
             role = UserRole.USER;
         }
-        String authority = role.toString();
+        String authority = (role == null) ? "USER" : role.toString();
         Collection<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority(authority));
 
