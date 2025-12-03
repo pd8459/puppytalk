@@ -60,4 +60,13 @@ public class MessageController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }
     }
+
+    @PostMapping("/inquiry/{receiverUsername}")
+    public ResponseEntity<Long> startInquiry(
+            @PathVariable String receiverUsername,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        Long conversationId = messageService.createOrGetConversation(userDetails.getUser(), receiverUsername);
+        return ResponseEntity.ok(conversationId);
+    }
 }

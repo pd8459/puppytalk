@@ -62,7 +62,7 @@ public class SecurityConfig {
                 "/public-profile/**", "/api/users/signup", "/api/users/login", "/api/logout",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
-                "/ws-stomp/**", "/shop/**", "/api/shop/**","/admin/**", "/admin/api/**",
+                "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products"
         };
 
         http.authorizeHttpRequests(authorize -> authorize

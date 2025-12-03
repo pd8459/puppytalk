@@ -34,6 +34,9 @@
                 <h2 id="p-name" class="fw-bold mb-3"></h2>
                 <h3 class="text-primary fw-bold mb-4"><span id="p-price"></span>원</h3>
 
+                <div class="mb-3">
+                    <small class="text-muted">판매자: <span id="p-seller" class="fw-bold"></span></small>
+                </div>
                 <div class="mb-4">
                     <p class="text-muted">남은 수량: <span id="p-stock"></span>개</p>
                 </div>
@@ -50,9 +53,8 @@
                 <hr>
 
                 <div class="d-grid gap-2">
-                    <button class="btn btn-primary btn-lg" onclick="alert('준비 중인 기능입니다 (결제 연동 예정)')">바로 구매하기</button>
+                    <button class="btn btn-primary btn-lg" onclick="alert('장바구니에 담아 결제해주세요!')">바로 구매하기</button>
                     <button id="add-cart-btn" class="btn btn-outline-dark btn-lg">장바구니 담기</button>
-
                     <button id="chat-btn" class="btn btn-outline-success btn-lg">💬 판매자에게 문의하기</button>
                 </div>
             </div>
@@ -77,6 +79,7 @@
 <script th:inline="javascript">
     const productId = [[${productId}]];
     let currentStock = 0;
+    let sellerUsername = "1111";
 
     window.addEventListener('DOMContentLoaded', async () => {
         try {
@@ -86,10 +89,15 @@
             const p = await response.json();
             currentStock = p.stockQuantity;
 
+            if (p.sellerUsername) {
+                sellerUsername = p.sellerUsername;
+            }
+
             document.getElementById('p-name').textContent = p.name;
             document.getElementById('p-price').textContent = p.price.toLocaleString();
             document.getElementById('p-stock').textContent = p.stockQuantity;
             document.getElementById('p-desc').textContent = p.description;
+            document.getElementById('p-seller').textContent = p.sellerNickname || '관리자';
             document.getElementById('quantity').max = p.stockQuantity;
 
             const imgEl = document.getElementById('p-image');
@@ -110,10 +118,24 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('product-container').style.display = 'block';
 
-            document.getElementById('chat-btn').onclick = () => {
-                alert('채팅 기능과 연동할 예정입니다.');
-            };
+            document.getElementById('chat-btn').onclick = async () => {
+                try {
+                    const response = await fetch(`/api/messages/inquiry/${sellerUsername}`, {
+                        method: 'POST'
+                    });
 
+                    if (response.ok) {
+                        const conversationId = await response.json();
+                        window.location.href = `/inquiry?id=${conversationId}`;
+                    } else {
+                        const errorText = await response.text();
+                        alert('문의 실패: ' + errorText);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('오류가 발생했습니다.');
+                }
+            };
         } catch (error) {
             alert(error.message);
             location.href = '/shop/list';

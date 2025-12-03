@@ -61,11 +61,6 @@ public class ViewController {
         return "messages";
     }
 
-    @GetMapping("/conversation")
-    public String conversationPage() {
-        return "conversation";
-    }
-
     @GetMapping("/notifications")
     public String notificationsPage() {
         return "notifications";
