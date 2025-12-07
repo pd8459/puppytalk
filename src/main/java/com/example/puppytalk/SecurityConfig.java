@@ -47,12 +47,15 @@ public class SecurityConfig {
                 headers.contentSecurityPolicy(csp ->
                         csp.policyDirectives(
                                 "default-src 'self'; " +
-                                        "script-src 'self' 'unsafe-inline' *.kakao.com t1.daumcdn.net cdn.jsdelivr.net uicdn.toast.com https://cdn.iamport.kr; " +
-                                        "img-src 'self' data: https: *.daumcdn.net; " +
-                                        "connect-src 'self' https: ws: wss:; " +
-                                        "frame-src 'self' https:; " +
-                                        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net uicdn.toast.com https://cdnjs.cloudflare.com; " +
-                                        "font-src 'self' cdn.jsdelivr.net https://cdnjs.cloudflare.com;"
+                                        "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.kakao.com *.daumcdn.net cdn.jsdelivr.net *.iamport.kr " +
+                                        "https://*.google.com https://*.googleapis.com https://*.gstatic.com https://accounts.google.com; " +
+                                        "img-src 'self' data: *.kakao.com *.daumcdn.net https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com; " +
+                                        "connect-src 'self' ws: wss: https://*.kakao.com https://*.iamport.kr " +
+                                        "https://*.google.com https://*.googleapis.com https://*.gstatic.com https://accounts.google.com; " +
+                                        "frame-src 'self' https://*.kakao.com https://*.iamport.kr https://*.google.com https://accounts.google.com; " +
+                                        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.googleapis.com; " +
+                                        "font-src 'self' cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.gstatic.com;" +
+                                        "img-src 'self' data: *.kakao.com *.daumcdn.net https://*.google.com ... https://*.pstatic.net; " // 👈 추가
                         )
                 )
         );
@@ -62,7 +65,8 @@ public class SecurityConfig {
                 "/public-profile/**", "/api/users/signup", "/api/users/login", "/api/logout",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
-                "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products"
+                "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products",
+                "/api/user/**"
         };
 
         http.authorizeHttpRequests(authorize -> authorize
@@ -74,7 +78,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
         );
 
-        http.addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService),
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -83,7 +88,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:63342", "http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:3000"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:63342",
+                "http://localhost:5500",
+                "http://127.0.0.1:5500",
+                "http://localhost:3000"
+        ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

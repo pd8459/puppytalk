@@ -38,3 +38,6 @@ out/
 
 # application.properties 파일은 민감 정보를 포함하므로 Git 추적에서 제외
 application.properties
+
+# Local configuration (Secrets)
+application-local.properties
