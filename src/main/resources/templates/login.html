@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>PuppyTalk - 로그인</title>
@@ -9,6 +9,7 @@
 <div class="container d-flex justify-content-center align-items-center vh-100">
     <div class="card p-4" style="width: 400px;">
         <h1 class="text-center mb-4">로그인</h1>
+
         <form id="login-form">
             <div class="mb-3">
                 <label for="username" class="form-label">아이디</label>
@@ -20,6 +21,37 @@
             </div>
             <button type="submit" class="btn btn-primary w-100">로그인</button>
         </form>
+
+        <div class="mt-3">
+            <a th:href="@{|https://kauth.kakao.com/oauth/authorize?client_id=${kakaoClientId}&redirect_uri=http://localhost:8080/api/user/kakao/callback&response_type=code|}"
+               class="btn w-100 fw-bold"
+               style="background-color: #FEE500; color: #191919; border: none;">
+                <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png"
+                     width="20" style="margin-right: 5px; vertical-align: middle;">
+                카카오로 시작하기
+            </a>
+        </div>
+
+        <div class="mt-2">
+            <a th:href="@{|https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=http://localhost:8080/api/user/google/callback&response_type=code&scope=email%20profile|}"
+               class="btn w-100 fw-bold border"
+               style="background-color: white; color: #444;">
+                <img src="https://developers.google.com/identity/images/g-logo.png"
+                     width="20" style="margin-right: 5px; vertical-align: middle;">
+                구글로 시작하기
+            </a>
+        </div>
+
+        <div class="mt-2">
+            <a th:href="@{|https://nid.naver.com/oauth2.0/authorize?client_id=${naverClientId}&redirect_uri=http://localhost:8080/api/user/naver/callback&response_type=code&state=${naverState}|}"
+               class="btn w-100 fw-bold"
+               style="background-color: #03C75A; color: white; border: none;">
+                <span style="font-weight: 900; margin-right: 5px;">N</span>
+                네이버로 시작하기
+            </a>
+        </div>
+
+
         <div id="message" class="mt-3 text-center"></div>
         <div class="text-center mt-3">
             계정이 없으신가요? <a href="/signup">회원가입</a>
@@ -45,7 +77,8 @@
                 messageDiv.textContent = '로그인에 성공했습니다! 잠시 후 이동합니다.';
                 messageDiv.style.color = 'green';
                 setTimeout(() => {
-                    const redirectURL = new URLSearchParams(window.location.search).get('redirectURL');
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectURL = urlParams.get('redirectURL');
                     window.location.href = redirectURL || '/main';
                 }, 1000);
             } else {

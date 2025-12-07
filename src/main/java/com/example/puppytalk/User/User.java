@@ -21,6 +21,10 @@ public class User extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long kakaoId;
+    private String googleId;
+    private String naverId;
+
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
@@ -48,7 +52,7 @@ public class User extends BaseTimeEntity {
     private List<Pet> pets = new ArrayList<>();
 
     @Builder
-    public User(String username, String password, String nickname, String email, String profileImageUrl, UserRole role, UserStatus status) {
+    public User(String username, String password, String nickname, String email, String profileImageUrl, UserRole role, UserStatus status, Long kakaoId, String googleId, String naverId) {
         this.username = username;
         this.password = password;
         this.nickname = nickname;
@@ -56,6 +60,9 @@ public class User extends BaseTimeEntity {
         this.profileImageUrl = profileImageUrl;
         if (role != null) this.role = role;
         if (status != null) this.status = status;
+        this.kakaoId = kakaoId;
+        this.googleId = googleId;
+        this.naverId = naverId;
     }
 
     public void updateNickname(String newNickname) {
@@ -80,5 +87,20 @@ public class User extends BaseTimeEntity {
 
     public void updateStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public User kakaoIdUpdate(Long kakaoId) {
+        this.kakaoId = kakaoId;
+        return this;
+    }
+
+    public User googleIdUpdate(String googleId) {
+        this.googleId = googleId;
+        return this;
+    }
+
+    public User naverIdUpdate(String naverId) {
+        this.naverId = naverId;
+        return this;
     }
 }

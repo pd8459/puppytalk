@@ -1,6 +1,7 @@
 package com.example.puppytalk.User;
 
 import com.example.puppytalk.Jwt.JwtUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
@@ -13,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -20,6 +23,9 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final KakaoService kakaoService;
+    private final GoogleService googleService;
+    private final NaverService naverService;
 
     @PostMapping("/users/signup")
     public ResponseEntity<String> signup(@RequestBody UserSignupRequestDto requestDto) {
@@ -70,5 +76,23 @@ public class UserController {
             @PageableDefault(size=10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PublicProfileResponseDto profileDto = userService.getPublicProfile(username, pageable);
         return ResponseEntity.ok(profileDto);
+    }
+
+    @GetMapping("/user/kakao/callback")
+    public void kakaoLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
+        kakaoService.kakaoLogin(code, response);
+        response.sendRedirect("/main");
+    }
+
+    @GetMapping("/user/google/callback")
+    public void googleLogin(@RequestParam String code, HttpServletResponse response) throws IOException {
+        googleService.googleLogin(code, response);
+        response.sendRedirect("/main");
+    }
+
+    @GetMapping("/user/naver/callback")
+    public void naverLogin(@RequestParam String code, @RequestParam String state, HttpServletResponse response) throws IOException {
+        naverService.naverLogin(code, state, response);
+        response.sendRedirect("/main");
     }
 }
