@@ -1,13 +1,19 @@
 package com.example.puppytalk.Shop;
 
 import jakarta.persistence.*;
+
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "product")
 public class Product extends BaseTimeEntity {
 
@@ -18,8 +24,11 @@ public class Product extends BaseTimeEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private int price;
+    private int originalPrice;
+
+    private int salePrice;
+
+    private int discountRate;
 
     @Column(nullable = false)
     private int stockQuantity;
@@ -28,6 +37,8 @@ public class Product extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String thumbnailUrl;
 
     @Enumerated(EnumType.STRING)
@@ -38,19 +49,9 @@ public class Product extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private DogSize recommendedSize;
 
-    @Builder
-    public Product(String name, int price, int stockQuantity, String description, String thumbnailUrl, String targetBreed, DogSize recommendedSize) {
-        this.name = name;
-        this.price = price;
-        this.stockQuantity = stockQuantity;
-        this.description = description;
-        this.thumbnailUrl = thumbnailUrl;
-        this.status = ProductStatus.ON_SALE;
-        this.targetBreed = targetBreed;
-        this.recommendedSize = recommendedSize;
-    }
+    private LocalDateTime saleStartTime;
+    private LocalDateTime saleEndTime;
 
-    // 재고 관리 로직
     public void removeStock(int quantity) {
         int restStock = this.stockQuantity - quantity;
         if (restStock < 0) {
@@ -69,17 +70,41 @@ public class Product extends BaseTimeEntity {
         }
     }
 
-    public void updateProduct(String name, int price, String description, String thumbnailUrl, int stockQuantity, String targetBreed, DogSize recommendedSize) {
+    public void updateProduct(String name, int originalPrice, int discountRate, int salePrice,
+                              String description, String thumbnailUrl, int stockQuantity,
+                              String targetBreed, DogSize recommendedSize,LocalDateTime saleStartTime, LocalDateTime saleEndTime) {
         this.name = name;
-        this.price = price;
+        this.originalPrice = originalPrice;
+        this.discountRate = discountRate;
+        this.salePrice = salePrice;
         this.description = description;
-        this.thumbnailUrl = thumbnailUrl;
+        if(thumbnailUrl != null) this.thumbnailUrl = thumbnailUrl;
         this.stockQuantity = stockQuantity;
         this.targetBreed = targetBreed;
         this.recommendedSize = recommendedSize;
+        this.saleStartTime = saleStartTime;
+        this.saleEndTime = saleEndTime;
     }
 
     public void changeStatus(ProductStatus status) {
         this.status = status;
+    }
+
+    public void applyDiscount(int discountRate) {
+        this.discountRate = discountRate;
+        this.salePrice = this.originalPrice - (this.originalPrice * discountRate / 100);
+    }
+
+    public int getCurrentPrice() {
+        LocalDateTime now = LocalDateTime.now();
+        if (this.saleStartTime != null && this.saleEndTime != null) {
+            if (now.isAfter(this.saleStartTime) && now.isBefore(this.saleEndTime)) {
+                return this.salePrice;
+            }
+        }
+        else if (this.discountRate > 0) {
+            return this.salePrice;
+        }
+        return this.originalPrice;
     }
 }

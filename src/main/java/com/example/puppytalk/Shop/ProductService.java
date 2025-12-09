@@ -4,6 +4,7 @@ package com.example.puppytalk.Shop;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,7 +17,29 @@ public class ProductService {
 
     @Transactional
     public Long createProduct(ProductRequestDto requestDto) {
-        return productRepository.save(requestDto.toEntity()).getId();
+        int salePrice = requestDto.getOriginalPrice();
+        if (requestDto.getDiscountRate() > 0) {
+            salePrice = salePrice - (salePrice * requestDto.getDiscountRate() / 100);
+        }
+
+        Product product = Product.builder()
+                .name(requestDto.getName())
+                .originalPrice(requestDto.getOriginalPrice())
+                .discountRate(requestDto.getDiscountRate())
+                .salePrice(salePrice)
+                .description(requestDto.getDescription())
+                .thumbnailUrl(requestDto.getThumbnailUrl())
+                .stockQuantity(requestDto.getStockQuantity())
+                .targetBreed(requestDto.getTargetBreed())
+                .recommendedSize(requestDto.getRecommendedSize())
+                .status(ProductStatus.ON_SALE)
+                .saleStartTime(requestDto.getSaleStartTime())
+                .saleEndTime(requestDto.getSaleEndTime())
+                .build();
+
+        productRepository.save(product);
+
+        return product.getId();
     }
 
     @Transactional
@@ -24,20 +47,26 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다. id=" + productId));
 
-        System.out.println("[DEBUG] 수정 요청 데이터: " + requestDto.getName() + ", " + requestDto.getPrice());
+        int salePrice = requestDto.getOriginalPrice();
+        if (requestDto.getDiscountRate() > 0) {
+            salePrice = salePrice - (salePrice * requestDto.getDiscountRate() / 100);
+        }
+
         product.updateProduct(
                 requestDto.getName(),
-                requestDto.getPrice(),
+                requestDto.getOriginalPrice(),
+                requestDto.getDiscountRate(),
+                salePrice,
                 requestDto.getDescription(),
                 requestDto.getThumbnailUrl(),
                 requestDto.getStockQuantity(),
                 requestDto.getTargetBreed(),
-                requestDto.getRecommendedSize()
+                requestDto.getRecommendedSize(),
+                requestDto.getSaleStartTime(),
+                requestDto.getSaleEndTime()
         );
 
         productRepository.save(product);
-
-        System.out.println("[DEBUG] 저장 완료!");
     }
 
     @Transactional(readOnly = true)

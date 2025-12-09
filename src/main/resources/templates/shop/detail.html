@@ -31,8 +31,19 @@
                     <span id="p-breed" class="badge badge-breed me-1" style="display: none;"></span>
                     <span id="p-size" class="badge badge-size" style="display: none;"></span>
                 </div>
+
                 <h2 id="p-name" class="fw-bold mb-3"></h2>
-                <h3 class="text-primary fw-bold mb-4"><span id="p-price"></span>원</h3>
+
+                <div id="time-deal-box" class="alert alert-danger d-flex align-items-center mb-3" role="alert" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-alarm-fill me-2" viewBox="0 0 16 16">
+                        <path d="M6 .5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V.5zM3.802 1.571a.5.5 0 0 1 .634.197L5.5 3.32a.5.5 0 0 1-.228.68l-6 3.5a.5.5 0 0 1-.68-.23L.197 2.205a.5.5 0 0 1 .197-.634l3.408-1.999zM8.5 1.5v9h-1v-9h1zm5.5 2.053l-3.408 2a.5.5 0 0 1-.68-.23L8.5 3.32a.5.5 0 0 1 .634-.197l3.408 1.999a.5.5 0 0 1 .197.634l-.634 1.096a.5.5 0 0 1-.68.23l-3.408-2zM9.5 14.5V15h-3v-.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5zM12 5.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z"/>
+                    </svg>
+                    <div>
+                        <strong>마감 임박!</strong> 남은 시간: <span id="countdown" class="fw-bold fs-5 ms-2">00:00:00</span>
+                    </div>
+                </div>
+
+                <div id="price-area" class="mb-4"></div>
 
                 <div class="mb-3">
                     <small class="text-muted">판매자: <span id="p-seller" class="fw-bold"></span></small>
@@ -56,6 +67,8 @@
                     <button class="btn btn-primary btn-lg" onclick="alert('장바구니에 담아 결제해주세요!')">바로 구매하기</button>
                     <button id="add-cart-btn" class="btn btn-outline-dark btn-lg">장바구니 담기</button>
                     <button id="chat-btn" class="btn btn-outline-success btn-lg">💬 판매자에게 문의하기</button>
+
+                    <a th:href="@{/shop/update(id=${productId})}" class="btn btn-secondary mt-2">🛠️ 상품 수정 (관리자용)</a>
                 </div>
             </div>
         </div>
@@ -94,11 +107,55 @@
             }
 
             document.getElementById('p-name').textContent = p.name;
-            document.getElementById('p-price').textContent = p.price.toLocaleString();
             document.getElementById('p-stock').textContent = p.stockQuantity;
             document.getElementById('p-desc').textContent = p.description;
             document.getElementById('p-seller').textContent = p.sellerNickname || '관리자';
             document.getElementById('quantity').max = p.stockQuantity;
+
+            const priceArea = document.getElementById('price-area');
+            if (p.discountRate > 0) {
+                priceArea.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <h3 class="text-muted text-decoration-line-through me-2 mb-0">${p.originalPrice.toLocaleString()}원</h3>
+                        <h2 class="text-danger fw-bold mb-0">${p.price.toLocaleString()}원</h2>
+                        <span class="badge bg-danger ms-2 fs-6">${p.discountRate}% OFF</span>
+                    </div>
+                `;
+            } else {
+                priceArea.innerHTML = `<h2 class="text-primary fw-bold">${p.price.toLocaleString()}원</h2>`;
+            }
+
+            if (p.saleEndTime) {
+                const timerBox = document.getElementById('time-deal-box');
+                const countdownSpan = document.getElementById('countdown');
+                const endTime = new Date(p.saleEndTime).getTime();
+
+                function updateTimer() {
+                    const now = new Date().getTime();
+                    const distance = endTime - now;
+
+                    if (distance < 0) {
+                        clearInterval(interval);
+                        timerBox.classList.remove('alert-danger');
+                        timerBox.classList.add('alert-secondary');
+                        timerBox.innerHTML = "<strong>🚫 타임딜이 종료되었습니다.</strong>";
+                        timerBox.style.display = 'block';
+                        return;
+                    }
+
+                    const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    countdownSpan.innerText =
+                        `${h < 10 ? '0' + h : h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+
+                    timerBox.style.display = 'flex';
+                }
+
+                const interval = setInterval(updateTimer, 1000);
+                updateTimer();
+            }
 
             const imgEl = document.getElementById('p-image');
             imgEl.src = p.thumbnailUrl || '/images/no-image.png';

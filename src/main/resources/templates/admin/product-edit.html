@@ -8,23 +8,47 @@
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container mt-5" style="max-width: 600px;">
+<div class="container mt-5" style="max-width: 800px;">
     <h2 class="mb-4">🛠️ 상품 수정</h2>
     <form id="edit-form">
         <div class="mb-3">
             <label class="form-label">상품명</label>
             <input type="text" class="form-control" id="name" required>
         </div>
+
         <div class="row mb-3">
             <div class="col">
-                <label class="form-label">가격</label>
-                <input type="number" class="form-control" id="price" required>
+                <label class="form-label">정가 (원)</label>
+                <input type="number" class="form-control" id="originalPrice" required>
             </div>
             <div class="col">
                 <label class="form-label">재고 수량</label>
                 <input type="number" class="form-control" id="stockQuantity" required>
             </div>
         </div>
+
+        <div class="card p-3 mb-3 bg-light border-0">
+            <h6 class="fw-bold mb-3">⚡ 할인 및 타임딜 설정</h6>
+            <div class="mb-3">
+                <label for="discountRate" class="form-label">할인율 (%)</label>
+                <input type="number" class="form-control" id="discountRate" placeholder="0" value="0">
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="saleStartTime" class="form-label">시작 시간</label>
+                    <input type="datetime-local" class="form-control" id="saleStartTime">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="saleEndTime" class="form-label">종료 시간</label>
+                    <input type="datetime-local" class="form-control" id="saleEndTime">
+                </div>
+            </div>
+            <div class="form-text text-danger small">
+                * 시간을 설정하면 해당 시간에만 할인가가 적용됩니다. (타임딜)<br>
+                * 시간을 비우면 상시 할인이 적용됩니다.
+            </div>
+        </div>
+
         <div class="mb-3">
             <label class="form-label">상세 설명</label>
             <textarea class="form-control" id="description" rows="5" required></textarea>
@@ -49,7 +73,7 @@
         </div>
 
         <button type="submit" class="btn btn-success w-100 mt-3">수정 완료</button>
-        <a href="/shop/admin/products" class="btn btn-secondary w-100 mt-2">취소</a>
+        <a href="/shop/list" class="btn btn-secondary w-100 mt-2">취소</a>
     </form>
 </div>
 
@@ -58,30 +82,53 @@
     const productId = [[${productId}]];
 
     window.addEventListener('DOMContentLoaded', async () => {
-        // 기존 데이터 불러오기
-        const response = await fetch(`/api/shop/products/${productId}`);
-        const p = await response.json();
+        try {
+            const response = await fetch(`/api/shop/products/${productId}`);
+            if(!response.ok) throw new Error("상품 로드 실패");
 
-        document.getElementById('name').value = p.name;
-        document.getElementById('price').value = p.price;
-        document.getElementById('stockQuantity').value = p.stockQuantity;
-        document.getElementById('description').value = p.description;
-        document.getElementById('thumbnailUrl').value = p.thumbnailUrl;
-        document.getElementById('targetBreed').value = p.targetBreed || '';
-        document.getElementById('recommendedSize').value = p.recommendedSize;
+            const p = await response.json();
+
+            document.getElementById('name').value = p.name;
+            document.getElementById('originalPrice').value = p.originalPrice;
+            document.getElementById('stockQuantity').value = p.stockQuantity;
+            document.getElementById('description').value = p.description;
+            document.getElementById('thumbnailUrl').value = p.thumbnailUrl || '';
+            document.getElementById('targetBreed').value = p.targetBreed || '';
+            document.getElementById('recommendedSize').value = p.recommendedSize;
+            document.getElementById('discountRate').value = p.discountRate || 0;
+
+            if (p.saleStartTime) {
+                document.getElementById('saleStartTime').value = p.saleStartTime.substring(0, 16);
+            }
+            if (p.saleEndTime) {
+                document.getElementById('saleEndTime').value = p.saleEndTime.substring(0, 16);
+            }
+        } catch(e) {
+            console.error(e);
+            alert("정보를 불러오지 못했습니다.");
+        }
     });
 
     document.getElementById('edit-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        let saleStartTime = document.getElementById('saleStartTime').value;
+        let saleEndTime = document.getElementById('saleEndTime').value;
+
+        if (saleStartTime && saleStartTime.length === 16) saleStartTime += ':00';
+        if (saleEndTime && saleEndTime.length === 16) saleEndTime += ':00';
+
         const data = {
             name: document.getElementById('name').value,
-            price: parseInt(document.getElementById('price').value),
+            originalPrice: parseInt(document.getElementById('originalPrice').value),
             stockQuantity: parseInt(document.getElementById('stockQuantity').value),
             description: document.getElementById('description').value,
             thumbnailUrl: document.getElementById('thumbnailUrl').value,
             targetBreed: document.getElementById('targetBreed').value || null,
-            recommendedSize: document.getElementById('recommendedSize').value
+            recommendedSize: document.getElementById('recommendedSize').value,
+            discountRate: parseInt(document.getElementById('discountRate').value) || 0,
+            saleStartTime: saleStartTime || null,
+            saleEndTime: saleEndTime || null
         };
 
         try {
@@ -93,7 +140,7 @@
 
             if (response.ok) {
                 alert('수정되었습니다.');
-                window.location.href = '/admin/products';
+                window.location.href = `/shop/detail?id=${productId}`;
             } else {
                 alert('수정 실패');
             }

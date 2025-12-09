@@ -12,12 +12,12 @@ public class CartItemDto {
     private int price;
     private int count;
     private String thumbnailUrl;
-    private int totalPrice; // 상품가격 * 수량
+    private int totalPrice;
 
     public CartItemDto(CartItem cartItem) {
         this.cartItemId = cartItem.getId();
         this.productName = cartItem.getProduct().getName();
-        this.price = cartItem.getProduct().getPrice();
+        this.price = cartItem.getProduct().getCurrentPrice();
         this.count = cartItem.getCount();
         this.thumbnailUrl = cartItem.getProduct().getThumbnailUrl();
         this.totalPrice = this.price * this.count;

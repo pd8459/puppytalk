@@ -21,6 +21,16 @@
         }
         .badge-breed { background-color: #6f42c1; color: white; }
         .badge-size { background-color: #fd7e14; color: white; }
+        .badge-timedeal {
+            background-color: #dc3545;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -68,6 +78,8 @@
                 return;
             }
 
+            const formatPrice = (price) => new Intl.NumberFormat('ko-KR').format(price);
+
             products.forEach(product => {
                 const col = document.createElement('div');
                 col.className = 'col';
@@ -82,20 +94,44 @@
                     sizeBadge = `<span class="badge badge-size">${product.recommendedSize}</span>`;
                 }
 
-                // 숫자에 콤마 찍기 (가격)
-                const formattedPrice = new Intl.NumberFormat('ko-KR').format(product.price);
+                let priceHtml = '';
+
+                if (product.discountRate > 0) {
+                    const original = formatPrice(product.originalPrice);
+                    const sale = formatPrice(product.price);
+
+                    let saleBadge = '';
+                    if (product.isTimeDealActive) {
+                        saleBadge = `<span class="badge badge-timedeal ms-1">TIME DEAL 🔥</span>`;
+                    } else {
+                        saleBadge = `<span class="badge bg-danger ms-1">${product.discountRate}% OFF</span>`;
+                    }
+
+                    priceHtml = `
+                        <div class="text-end mt-3">
+                            <div class="text-muted text-decoration-line-through small">${original}원</div>
+                            <span class="text-danger fw-bold fs-5">${sale}원</span>
+                            ${saleBadge}
+                        </div>
+                    `;
+                } else {
+                    const price = formatPrice(product.price);
+                    priceHtml = `
+                        <h5 class="text-end text-primary fw-bold mt-3">${price}원</h5>
+                    `;
+                }
 
                 col.innerHTML = `
                     <div class="card h-100 product-card" onclick="location.href='/shop/detail?id=${product.id}'">
                         <img src="${product.thumbnailUrl || '/images/no-image.png'}" class="card-img-top" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title text-truncate">${product.name}</h5>
                             <div class="mb-2">
                                 ${breedBadge}
                                 ${sizeBadge}
                             </div>
-                            <p class="card-text text-truncate text-muted small">${product.description}</p>
-                            <h5 class="text-end text-primary fw-bold mt-3">${formattedPrice}원</h5>
+                            <p class="card-text text-truncate text-muted small flex-grow-1">${product.description}</p>
+                            ${priceHtml}
                         </div>
                     </div>
                 `;

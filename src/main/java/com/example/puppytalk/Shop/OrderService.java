@@ -31,17 +31,21 @@ public class OrderService {
         for (CartItem cartItem : cartItems) {
             OrderItem orderItem = OrderItem.createOrderItem(
                     cartItem.getProduct(),
+                    cartItem.getProduct().getCurrentPrice(),
                     cartItem.getCount()
             );
             orderItems.add(orderItem);
         }
+
         Order order = Order.createOrder(user, orderItems);
         orderRepository.save(order);
+
         cartItemRepository.deleteAll(cartItems);
         cart.getItems().clear();
 
         return order.getId();
     }
+
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
