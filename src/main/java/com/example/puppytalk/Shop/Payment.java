@@ -34,4 +34,8 @@ public class Payment extends BaseTimeEntity {
         this.payMethod = payMethod;
         this.status = status;
     }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }
