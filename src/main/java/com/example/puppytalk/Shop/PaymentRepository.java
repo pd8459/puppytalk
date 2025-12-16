@@ -7,7 +7,9 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByImpUid(String impUid);
+    Optional<Payment> findByOrder(Order order);
 
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.order.status <> 'CANCEL'")
     Long getTotalSales();
+
 }

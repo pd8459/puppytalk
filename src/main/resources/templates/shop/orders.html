@@ -67,11 +67,16 @@
                     ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelOrder(${order.orderId})">주문취소</button>`
                     : '';
 
+                let dateStr = order.orderDate;
+                if(dateStr.includes('T')) {
+                    dateStr = dateStr.replace('T', ' ').substring(0, 16);
+                }
+
                 const html = `
                     <div class="card mb-4 shadow-sm order-card ${order.status}">
                         <div class="card-header d-flex justify-content-between align-items-center bg-white">
                             <div>
-                                <span class="fw-bold me-2">${order.orderDate}</span>
+                                <span class="fw-bold me-2">${dateStr}</span>
                                 ${statusBadge}
                             </div>
                             <div>
@@ -93,16 +98,22 @@
     }
 
     async function cancelOrder(orderId) {
-        if (!confirm('주문을 취소하시겠습니까?')) return;
+        if (!confirm('정말 주문을 취소하시겠습니까? (결제가 환불됩니다)')) return;
         try {
-            const response = await fetch(`/api/shop/order/${orderId}/cancel`, { method: 'POST' });
+            const response = await fetch(`/api/shop/order/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
             if (response.ok) {
-                alert('주문이 취소되었습니다.');
+                alert('주문이 정상적으로 취소되었습니다.');
                 location.reload();
             } else {
-                alert('취소 실패');
+                const errorText = await response.text();
+                alert('취소 실패: ' + errorText);
             }
         } catch (e) {
+            console.error(e);
             alert('오류 발생');
         }
     }
