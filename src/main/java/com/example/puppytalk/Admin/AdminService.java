@@ -25,15 +25,24 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public AdminDashboardDto getDashboardStats() {
-        AdminDashboardDto dto = new AdminDashboardDto();
+        long totalSales = 0;
+        List<Order> orders = orderRepository.findAll();
 
-        Long sales = paymentRepository.getTotalSales();
-        dto.setTotalSales(sales == null ? 0 : sales);
+        long cancelCount = 0;
 
-        dto.setTotalOrders(orderRepository.count());
-        dto.setTotalMembers(userRepository.count());
+        for (Order order : orders) {
+            if (order.getStatus() != OrderStatus.CANCEL) {
+                totalSales += order.getTotalPrice();
+            }
+            if (order.getStatus() == OrderStatus.CANCEL || order.getStatus() == OrderStatus.CANCEL_REQUESTED) {
+                cancelCount++;
+            }
+        }
 
-        return dto;
+        long totalOrders = orders.size();
+        long totalMembers = userRepository.count();
+
+        return new AdminDashboardDto(totalSales, totalOrders, totalMembers, cancelCount);
     }
 
     @Transactional(readOnly = true)
@@ -62,5 +71,25 @@ public class AdminService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         user.updateStatus(status);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderHistoryDto> getCancelRequests(Pageable pageable) {
+        return orderRepository.findAllByStatus(OrderStatus.CANCEL_REQUESTED, pageable)
+                .map(OrderHistoryDto::new);
+    }
+
+    @Transactional
+    public void approveCancel(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 없음"));
+
+        order.setStatus(OrderStatus.CANCEL);
+
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getCount());
+        }
+
     }
 }

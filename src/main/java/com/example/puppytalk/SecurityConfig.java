@@ -43,22 +43,7 @@ public class SecurityConfig {
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
-        http.headers(headers ->
-                headers.contentSecurityPolicy(csp ->
-                        csp.policyDirectives(
-                                "default-src 'self'; " +
-                                        "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.kakao.com *.daumcdn.net cdn.jsdelivr.net *.iamport.kr " +
-                                        "https://*.google.com https://*.googleapis.com https://*.gstatic.com https://accounts.google.com; " +
-                                        "img-src 'self' data: *.kakao.com *.daumcdn.net https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com; " +
-                                        "connect-src 'self' ws: wss: https://*.kakao.com https://*.iamport.kr " +
-                                        "https://*.google.com https://*.googleapis.com https://*.gstatic.com https://accounts.google.com; " +
-                                        "frame-src 'self' https://*.kakao.com https://*.iamport.kr https://*.google.com https://accounts.google.com; " +
-                                        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.googleapis.com; " +
-                                        "font-src 'self' cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.gstatic.com;" +
-                                        "img-src 'self' data: *.kakao.com *.daumcdn.net https://*.google.com ... https://*.pstatic.net; " // 👈 추가
-                        )
-                )
-        );
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         String[] PUBLIC_URLS = {
                 "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds", "/hospitals",

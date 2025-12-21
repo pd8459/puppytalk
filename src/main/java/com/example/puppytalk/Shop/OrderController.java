@@ -44,4 +44,13 @@ public class OrderController {
     public ResponseEntity<List<OrderHistoryDto>> getOrderList(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(orderService.getOrderList(userDetails.getUser()));
     }
+
+    @PostMapping("/{orderId}/refund")
+    public ResponseEntity<String> requestRefund(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        orderService.requestRefund(orderId, userDetails.getUser());
+        return ResponseEntity.ok("환불 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.");
+    }
 }
