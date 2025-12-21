@@ -15,7 +15,6 @@ public class AdminSetupController {
 
     private final UserRepository userRepository;
 
-    // 1. 내 권한 확인하기
     @GetMapping("/setup/check")
     public String checkMyRole(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         if (userDetails == null) return "로그인이 필요합니다!";
@@ -26,15 +25,13 @@ public class AdminSetupController {
                 "<h1>현재 권한(Security): " + userDetails.getAuthorities() + "</h1>";
     }
 
-    // 2. 강제로 관리자 되기
     @GetMapping("/setup/admin")
     public String forceAdmin(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         if (userDetails == null) return "로그인이 필요합니다!";
 
         User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
 
-        // 강제 변경
-        user.promoteToAdmin(); // User 엔티티에 이 메서드가 있어야 합니다.
+        user.promoteToAdmin();
         userRepository.save(user);
 
         return "<h1>🎉 관리자 승격 완료!</h1>" +

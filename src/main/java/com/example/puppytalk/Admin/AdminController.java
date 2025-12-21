@@ -4,6 +4,7 @@ import com.example.puppytalk.Shop.OrderHistoryDto;
 import com.example.puppytalk.Shop.OrderStatus;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserStatus;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +50,31 @@ public class AdminController {
         return ResponseEntity.ok("상태가 변경되었습니다.");
     }
 
+    @PostMapping("/api/orders/bulk-status")
+    @ResponseBody
+    public ResponseEntity<String> updateBulkStatus(@RequestBody BulkStatusRequest request) {
+        List<Long> orderIds = request.getOrderIds();
+        OrderStatus status = request.getStatus();
+
+        if (orderIds == null || orderIds.isEmpty()) {
+            return ResponseEntity.badRequest().body("선택된 주문이 없습니다.");
+        }
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (Long id : orderIds) {
+            try {
+                adminService.updateOrderStatus(id, status);
+                successCount++;
+            } catch (Exception e) {
+                failCount++;
+            }
+        }
+
+        return ResponseEntity.ok(successCount + "건 변경 성공 (" + failCount + "건 실패)");
+    }
+
     @GetMapping("/users")
     public String adminUsersPage() {
         return "admin/users";
@@ -82,5 +108,30 @@ public class AdminController {
     @GetMapping("/inquiries")
     public String adminInquiryListPage() {
         return "admin/inquiries";
+    }
+
+    @Data
+    static class BulkStatusRequest {
+        private List<Long> orderIds;
+        private OrderStatus status;
+    }
+
+    @GetMapping("/cancels")
+    public String adminCancelPage() {
+        return "admin/cancel-list";
+    }
+
+    @GetMapping("/api/cancels")
+    @ResponseBody
+    public ResponseEntity<Page<OrderHistoryDto>> getCancelRequests(
+            @PageableDefault(size = 10, sort = "orderDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getCancelRequests(pageable));
+    }
+
+    @PostMapping("/api/cancels/{orderId}/approve")
+    @ResponseBody
+    public ResponseEntity<String> approveCancel(@PathVariable Long orderId) {
+        adminService.approveCancel(orderId);
+        return ResponseEntity.ok("환불 처리가 완료되었습니다. (재고 복구됨)");
     }
 }

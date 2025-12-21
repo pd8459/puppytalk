@@ -15,6 +15,8 @@ public class OrderHistoryDto {
     private OrderStatus status;
     private int totalPrice;
     private List<OrderItemDto> orderItems;
+    private String buyerName;
+    private String orderName;
 
     public OrderHistoryDto(Order order) {
         this.orderId = order.getId();
@@ -24,6 +26,21 @@ public class OrderHistoryDto {
         this.orderItems = order.getOrderItems().stream()
                 .map(OrderItemDto::new)
                 .collect(Collectors.toList());
+
+        if (order.getUser() != null) {
+            this.buyerName = order.getUser().getNickname();
+        } else {
+            this.buyerName = "Unknown";
+        }
+
+        if (!order.getOrderItems().isEmpty()) {
+            String firstName = order.getOrderItems().get(0).getProduct().getName();
+            if (order.getOrderItems().size() > 1) {
+                this.orderName = firstName + " 외 " + (order.getOrderItems().size() - 1) + "건";
+            } else {
+                this.orderName = firstName;
+            }
+        }
     }
 
     @Getter

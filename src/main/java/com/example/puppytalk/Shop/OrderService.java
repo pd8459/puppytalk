@@ -2,6 +2,7 @@ package com.example.puppytalk.Shop;
 
 import com.example.puppytalk.User.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,5 +85,49 @@ public class OrderService {
     public Order getOrderEntity(Long orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderHistoryDto> getAllOrdersForAdmin() {
+        List<Order> orders = orderRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+
+        return orders.stream()
+                .map(order -> new OrderHistoryDto(order))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateOrderStatus(Long orderId, String statusStr) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
+
+        try {
+            OrderStatus status = OrderStatus.valueOf(statusStr.toUpperCase());
+
+            if (order.getStatus() == OrderStatus.CANCEL) {
+                throw new IllegalStateException("취소된 주문은 상태를 변경할 수 없습니다.");
+            }
+
+            order.setStatus(status);
+
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("잘못된 상태 값입니다: " + statusStr);
+        }
+    }
+
+    @Transactional
+    public void requestRefund(Long orderId, User user) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("본인의 주문만 환불 요청할 수 있습니다.");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCEL || order.getStatus() == OrderStatus.CANCEL_REQUESTED) {
+            throw new IllegalArgumentException("이미 취소되었거나 환불 요청된 주문입니다.");
+        }
+
+        order.setStatus(OrderStatus.CANCEL_REQUESTED);
     }
 }
