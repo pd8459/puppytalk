@@ -54,4 +54,5 @@ public class ProductController {
         productService.deleteProduct(productId);
         return ResponseEntity.ok("상품이 삭제(숨김) 처리되었습니다.");
     }
+
 }

@@ -18,6 +18,7 @@ public class OrderHistoryDto {
     private String buyerName;
     private String orderName;
 
+
     public OrderHistoryDto(Order order) {
         this.orderId = order.getId();
         this.orderDate = order.getOrderDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
