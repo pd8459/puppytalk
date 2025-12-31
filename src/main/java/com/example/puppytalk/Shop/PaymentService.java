@@ -28,8 +28,9 @@ public class PaymentService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문이 존재하지 않습니다."));
 
-        if(order.getTotalPrice() != requestDto.getPaid_amount()) {
-            throw new IllegalArgumentException("결제 금액이 일치하지 않습니다.");
+        if (order.getStatus() == OrderStatus.PENDING) {
+            order.setStatus(OrderStatus.ORDER);
+            orderRepository.save(order);
         }
 
         Payment payment = Payment.builder()
@@ -63,7 +64,7 @@ public class PaymentService {
         Payment payment = paymentRepository.findByImpUid(impUid)
                 .orElse(null);
         if (payment != null) {
-            payment.setStatus("CANCEL"); // Payment 엔티티에 setStatus가 있다고 가정
+            payment.setStatus("CANCEL");
         }
     }
 }

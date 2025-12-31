@@ -20,6 +20,7 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
+    private final ProductRepository productRepository;
 
     public Long orderFromCart(User user) {
         Cart cart = cartRepository.findByUserId(user.getId())
@@ -129,5 +130,28 @@ public class OrderService {
         }
 
         order.setStatus(OrderStatus.CANCEL_REQUESTED);
+    }
+
+    @Transactional
+    public Long directOrder(User user, Long productId, int count) {
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+        if (product.getStockQuantity() < count) {
+            throw new IllegalArgumentException("재고가 부족합니다.");
+        }
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        OrderItem orderItem = OrderItem.createOrderItem(
+                product,
+                product.getCurrentPrice(),
+                count
+        );
+        orderItems.add(orderItem);
+
+        Order order = Order.createOrder(user, orderItems);
+        orderRepository.save(order);
+        return order.getId();
     }
 }

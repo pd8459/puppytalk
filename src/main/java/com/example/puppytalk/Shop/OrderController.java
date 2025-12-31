@@ -53,4 +53,17 @@ public class OrderController {
         orderService.requestRefund(orderId, userDetails.getUser());
         return ResponseEntity.ok("환불 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.");
     }
+
+    @PostMapping("/direct")
+    public ResponseEntity<Map<String, Object>> directOrder(
+            @RequestBody DirectOrderDto request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Long orderId = orderService.directOrder(userDetails.getUser(), request.getProductId(), request.getCount());
+        Map<String, Object> response = new HashMap<>();
+        response.put("orderId", orderId);
+        response.put("message", "주문이 완료되었습니다.");
+
+        return ResponseEntity.ok(response);
+    }
 }

@@ -44,7 +44,7 @@ public class Order extends BaseTimeEntity {
         for (OrderItem orderItem : orderItems) {
             order.addOrderItem(orderItem);
         }
-        order.status = OrderStatus.ORDER;
+        order.setStatus(OrderStatus.PENDING);
         order.orderDate = LocalDateTime.now();
         return order;
     }
