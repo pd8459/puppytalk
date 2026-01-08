@@ -33,9 +33,13 @@ public class OrderService {
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cartItems) {
+
+            Product product = productRepository.findByIdWithLock(cartItem.getProduct().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
             OrderItem orderItem = OrderItem.createOrderItem(
-                    cartItem.getProduct(),
-                    cartItem.getProduct().getCurrentPrice(),
+                    product,
+                    product.getCurrentPrice(),
                     cartItem.getCount()
             );
             orderItems.add(orderItem);
@@ -135,7 +139,7 @@ public class OrderService {
     @Transactional
     public Long directOrder(User user, Long productId, int count) {
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
         if (product.getStockQuantity() < count) {
