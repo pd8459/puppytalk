@@ -77,6 +77,46 @@
                 <div id="p-desc" class="p-3 bg-light rounded" style="white-space: pre-line; min-height: 200px;"></div>
             </div>
         </div>
+
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="border-bottom pb-2">📦 상품 후기</h3>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">후기 작성</h5>
+                        <div class="mb-3">
+                            <label for="ratingSelect" class="form-label">별점</label>
+                            <select class="form-select w-25" id="ratingSelect">
+                                <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
+                                <option value="4">⭐⭐⭐⭐ (4점)</option>
+                                <option value="3">⭐⭐⭐ (3점)</option>
+                                <option value="2">⭐⭐ (2점)</option>
+                                <option value="1">⭐ (1점)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reviewImage" class="form-label">사진 첨부 (선택)</label>
+                            <input class="form-control" type="file" id="reviewImage" accept="image/*">
+                        </div>
+
+                        <div class="mb-3">
+                            <textarea class="form-control" id="reviewContent" rows="3" placeholder="솔직한 후기를 남겨주세요! (구매한 상품만 작성 가능)"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="submitReview()">등록하기</button>
+                    </div>
+                </div>
+
+                <div id="reviewListContainer">
+                    <p class="text-center text-muted">불러오는 중...</p>
+                </div>
+
+                <div class="text-center mt-3">
+                    <button id="btnLoadMore" class="btn btn-outline-secondary" onclick="loadReviews()">후기 더보기</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="loading" class="text-center py-5">
@@ -91,8 +131,12 @@
     const productId = [[${productId}]];
     let currentStock = 0;
     let sellerUsername = "1111";
+    let currentPage = 0;
+    const pageSize = 5;
 
     window.addEventListener('DOMContentLoaded', async () => {
+        loadReviews();
+
         try {
             const response = await fetch(`/api/shop/products/${productId}`);
             if (!response.ok) throw new Error('상품 정보를 불러올 수 없습니다.');
@@ -236,6 +280,165 @@
             alert('오류가 발생했습니다.');
         }
     });
+
+    function loadReviews() {
+        fetch(`/api/reviews/product/${productId}?page=${currentPage}&size=${pageSize}`)
+            .then(response => response.json())
+            .then(data => {
+                const listContainer = document.getElementById('reviewListContainer');
+                const content = data.content;
+
+                if (currentPage === 0) listContainer.innerHTML = '';
+
+                if (content.length === 0 && currentPage === 0) {
+                    listContainer.innerHTML = '<p class="text-center text-muted p-3">아직 작성된 후기가 없습니다.</p>';
+                    document.getElementById('btnLoadMore').style.display = 'none';
+                    return;
+                }
+
+                content.forEach(review => {
+                    let imageHtml = '';
+                    if (review.imageUrl) {
+                        imageHtml = `<img src="${review.imageUrl}" class="img-fluid rounded mt-2" style="max-height: 200px; display: block;">`;
+                    }
+
+                    const html = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="card-subtitle mb-2 text-muted">${review.nickname}님</h6>
+                                    <small class="text-muted">${review.createdAt ? review.createdAt.substring(0, 10) : ''}</small>
+                                </div>
+                                <p class="card-text text-warning mb-1">${'⭐'.repeat(review.rating)}</p>
+
+                                <p class="card-text">${review.content}</p>
+
+                                ${imageHtml}
+
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${review.id})">삭제</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.insertAdjacentHTML('beforeend', html);
+                });
+
+                if (data.last) {
+                    document.getElementById('btnLoadMore').style.display = 'none';
+                } else {
+                    currentPage++;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function submitReview() {
+        const rating = document.getElementById('ratingSelect').value;
+        const content = document.getElementById('reviewContent').value;
+
+        if (!content.trim()) {
+            alert("후기 내용을 입력해주세요.");
+            return;
+        }
+
+        const reviewData = {
+            productId: productId,
+            content: content,
+            rating: parseInt(rating),
+            imageUrl: null
+        };
+
+        fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reviewData)
+        })
+            .then(async response => {
+                if (response.ok) {
+                    alert("후기가 등록되었습니다!");
+                    document.getElementById('reviewContent').value = '';
+                    currentPage = 0;
+                    loadReviews();
+                } else {
+                    const errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        alert(errorJson.message || "후기 등록 실패");
+                    } catch (e) {
+                        alert("후기 등록 실패: " + errorText);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("오류가 발생했습니다.");
+            });
+    }
+
+    function submitReview() {
+        const rating = document.getElementById('ratingSelect').value;
+        const content = document.getElementById('reviewContent').value;
+        const fileInput = document.getElementById('reviewImage'); // 파일 입력창 가져오기
+
+        if (!content.trim()) {
+            alert("후기 내용을 입력해주세요.");
+            return;
+        }
+
+        const formData = new FormData();
+
+        const dto = {
+            productId: productId,
+            content: content,
+            rating: parseInt(rating)
+        };
+
+        formData.append("dto", new Blob([JSON.stringify(dto)], { type: "application/json" }));
+
+        if (fileInput.files.length > 0) {
+            formData.append("file", fileInput.files[0]);
+        }
+
+        fetch('/api/reviews', {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                if (response.ok) {
+                    alert("후기가 등록되었습니다!");
+                    document.getElementById('reviewContent').value = '';
+                    document.getElementById('reviewImage').value = '';
+                    currentPage = 0;
+                    loadReviews();
+                } else {
+                    const errorText = await response.text();
+                    alert("후기 등록 실패: " + errorText);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("오류가 발생했습니다.");
+            });
+    }
+
+    function deleteReview(reviewId) {
+        if (!confirm("정말 이 후기를 삭제하시겠습니까?")) return;
+
+        fetch(`/api/reviews/${reviewId}`, {
+            method: 'DELETE'
+        })
+            .then(async response => {
+                if (response.ok) {
+                    alert("삭제되었습니다.");
+                    currentPage = 0;
+                    loadReviews();
+                } else {
+                    alert("삭제 권한이 없거나 오류가 발생했습니다.");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
 </script>
 </body>
 </html>
