@@ -178,6 +178,7 @@ puppytalk
 │   ├── model.pth            # PyTorch Model
 │   └── requirements.txt
 └── build.gradle
+```
 
 <br>
 
@@ -186,7 +187,7 @@ puppytalk
 ### 1. Main Server (Spring Boot)
 ```bash
 # 1. Clone Repository
-git clone [https://github.com/pd8459/puppytalk.git](https://github.com/pd8459/puppytalk.git)
+git clone https://github.com/pd8459/puppytalk.git
 cd puppytalk
 
 # 2. Build (Windows: gradlew.bat / Mac: ./gradlew)
@@ -194,11 +195,16 @@ gradlew clean build
 
 # 3. Run
 java -jar build/libs/*.jar
+```
 
+### 2. AI Server (FastAPI)
+```bash
+# 1. Move to AI directory
 cd ai-server
 
-# 1. Install Dependencies
+# 2. Install Dependencies
 pip install -r requirements.txt
 
-# 2. Run Server
+# 3. Run Server
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
