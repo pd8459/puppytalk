@@ -95,6 +95,12 @@
                                 <option value="1">⭐ (1점)</option>
                             </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="reviewImage" class="form-label">사진 첨부 (선택)</label>
+                            <input class="form-control" type="file" id="reviewImage" accept="image/*">
+                        </div>
+
                         <div class="mb-3">
                             <textarea class="form-control" id="reviewContent" rows="3" placeholder="솔직한 후기를 남겨주세요! (구매한 상품만 작성 가능)"></textarea>
                         </div>
@@ -282,9 +288,7 @@
                 const listContainer = document.getElementById('reviewListContainer');
                 const content = data.content;
 
-                if (currentPage === 0) {
-                    listContainer.innerHTML = '';
-                }
+                if (currentPage === 0) listContainer.innerHTML = '';
 
                 if (content.length === 0 && currentPage === 0) {
                     listContainer.innerHTML = '<p class="text-center text-muted p-3">아직 작성된 후기가 없습니다.</p>';
@@ -293,6 +297,11 @@
                 }
 
                 content.forEach(review => {
+                    let imageHtml = '';
+                    if (review.imageUrl) {
+                        imageHtml = `<img src="${review.imageUrl}" class="img-fluid rounded mt-2" style="max-height: 200px; display: block;">`;
+                    }
+
                     const html = `
                         <div class="card mb-3">
                             <div class="card-body">
@@ -301,8 +310,14 @@
                                     <small class="text-muted">${review.createdAt ? review.createdAt.substring(0, 10) : ''}</small>
                                 </div>
                                 <p class="card-text text-warning mb-1">${'⭐'.repeat(review.rating)}</p>
+
                                 <p class="card-text">${review.content}</p>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${review.id})">삭제</button>
+
+                                ${imageHtml}
+
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${review.id})">삭제</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -353,6 +368,52 @@
                     } catch (e) {
                         alert("후기 등록 실패: " + errorText);
                     }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("오류가 발생했습니다.");
+            });
+    }
+
+    function submitReview() {
+        const rating = document.getElementById('ratingSelect').value;
+        const content = document.getElementById('reviewContent').value;
+        const fileInput = document.getElementById('reviewImage'); // 파일 입력창 가져오기
+
+        if (!content.trim()) {
+            alert("후기 내용을 입력해주세요.");
+            return;
+        }
+
+        const formData = new FormData();
+
+        const dto = {
+            productId: productId,
+            content: content,
+            rating: parseInt(rating)
+        };
+
+        formData.append("dto", new Blob([JSON.stringify(dto)], { type: "application/json" }));
+
+        if (fileInput.files.length > 0) {
+            formData.append("file", fileInput.files[0]);
+        }
+
+        fetch('/api/reviews', {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                if (response.ok) {
+                    alert("후기가 등록되었습니다!");
+                    document.getElementById('reviewContent').value = '';
+                    document.getElementById('reviewImage').value = '';
+                    currentPage = 0;
+                    loadReviews();
+                } else {
+                    const errorText = await response.text();
+                    alert("후기 등록 실패: " + errorText);
                 }
             })
             .catch(error => {

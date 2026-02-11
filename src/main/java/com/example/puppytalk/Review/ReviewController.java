@@ -7,9 +7,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,12 +22,16 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createReview(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody ReviewRequestDto requestDto) {
 
-        Long reviewId = reviewService.createReview(userDetails.getUser(), requestDto);
+            @Valid @RequestPart("dto") ReviewRequestDto requestDto,
+
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) throws IOException {
+
+        Long reviewId = reviewService.createReview(userDetails.getUser(), requestDto, file);
         return ResponseEntity.ok(reviewId);
     }
 
