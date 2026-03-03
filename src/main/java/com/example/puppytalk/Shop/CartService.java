@@ -49,8 +49,9 @@ public class CartService {
     }
 
     public void deleteCartItem(Long cartItemId, User user) {
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
+        CartItem cartItem = cartItemRepository.findByIdWithCartAndUser(cartItemId)
                 .orElseThrow(() -> new IllegalArgumentException("장바구니 아이템이 존재하지 않습니다."));
+
         if (!cartItem.getCart().getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
@@ -59,7 +60,7 @@ public class CartService {
     }
 
     public void updateCartItemCount(Long cartItemId, int count, User user) {
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
+        CartItem cartItem = cartItemRepository.findByIdWithCartAndUser(cartItemId)
                 .orElseThrow(() -> new IllegalArgumentException("장바구니 아이템이 존재하지 않습니다."));
 
         if (!cartItem.getCart().getUser().getId().equals(user.getId())) {

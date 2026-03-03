@@ -6,9 +6,7 @@ import com.example.puppytalk.User.User;
 import com.example.puppytalk.image.Image;
 import com.example.puppytalk.like.PostLike;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +15,8 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Post extends Timestamped {
 
     @Id

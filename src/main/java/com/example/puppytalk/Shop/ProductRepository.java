@@ -1,6 +1,8 @@
 package com.example.puppytalk.Shop;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +21,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findByIdWithLock(@Param("id") Long id);
+
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category",
+            countQuery = "SELECT count(p) FROM Product p")
+    Page<Product> findAllWithCategory(Pageable pageable);
 }
