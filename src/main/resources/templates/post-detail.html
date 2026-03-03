@@ -290,14 +290,6 @@
             if (!response.ok) throw new Error();
             const pageData = await response.json();
 
-            if (isInitialLoad && pageData.totalPages > 0) {
-                isInitialLoad = false;
-                const lastPage = pageData.totalPages - 1;
-                if (page !== lastPage) {
-                    return fetchComments(lastPage);
-                }
-            }
-
             renderComments(pageData.content);
             renderCommentPagination(pageData);
             setupMessageButtons();
