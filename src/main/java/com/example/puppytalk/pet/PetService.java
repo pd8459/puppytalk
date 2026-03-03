@@ -59,7 +59,7 @@ public class PetService {
     }
 
     private Pet findPetByIdAndUser(Long petId, User user) {
-        Pet pet = petRepository.findById(petId)
+        Pet pet = petRepository.findByIdWithUser(petId)
                 .orElseThrow(() -> new IllegalArgumentException("ID에 해당하는 반려견 정보가 없습니다."));
 
         if (!pet.getUser().getId().equals(user.getId())) {
@@ -75,6 +75,4 @@ public class PetService {
         pet.setProfileImageUrl(imageUrl);
         return imageUrl;
     }
-
-
 }

@@ -66,7 +66,7 @@ public class OrderService {
             throw new RuntimeException("이미 취소된 주문입니다.");
         }
 
-        Payment payment = paymentRepository.findByOrder(order).orElse(null);
+        Payment payment = paymentRepository.findByOrderWithOrder(order).orElse(null);
 
         if (payment != null && "PAID".equals(payment.getStatus())) {
             try {
@@ -88,7 +88,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Order getOrderEntity(Long orderId) {
-        return orderRepository.findById(orderId)
+        return orderRepository.findOrderWithItemsAndProductsById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
     }
 

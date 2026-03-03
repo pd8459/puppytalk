@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
@@ -15,7 +16,7 @@ public class ImageService {
     private String uploadPath;
 
     public String storeFile(MultipartFile multipartFile) throws IOException {
-        if (multipartFile.isEmpty()) {
+        if (multipartFile == null || multipartFile.isEmpty()) {
             return null;
         }
 
@@ -27,7 +28,9 @@ public class ImageService {
             directory.mkdirs();
         }
 
-        multipartFile.transferTo(new File(uploadPath + storeFileName));
+        File saveFile = Paths.get(uploadPath, storeFileName).toFile();
+        multipartFile.transferTo(saveFile);
+
         return "/images/" + storeFileName;
     }
 
@@ -38,7 +41,9 @@ public class ImageService {
     }
 
     private String extractExt(String originalFilename) {
+        if (originalFilename == null) return "png"; // 기본값 설정
         int pos = originalFilename.lastIndexOf(".");
+        if (pos == -1) return "png";
         return originalFilename.substring(pos + 1);
     }
 }

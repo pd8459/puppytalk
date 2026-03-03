@@ -24,6 +24,7 @@ public class ProductResponseDto {
     private LocalDateTime saleStartTime;
     private LocalDateTime saleEndTime;
     private boolean isTimeDealActive;
+    private String categoryName;
 
     public ProductResponseDto(Product product) {
         this.id = product.getId();
@@ -37,6 +38,9 @@ public class ProductResponseDto {
         this.recommendedSize = product.getRecommendedSize();
         this.saleStartTime = product.getSaleStartTime();
         this.saleEndTime = product.getSaleEndTime();
+        if (product.getCategory() != null) {
+            this.categoryName = product.getCategory().getName();
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -53,4 +57,6 @@ public class ProductResponseDto {
             this.discountRate = 0;
         }
     }
+
+
 }

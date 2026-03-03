@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
-
 @Service
 @RequiredArgsConstructor
 public class PostService {
@@ -31,24 +29,24 @@ public class PostService {
     public Page<PostResponseDto> getPosts(PostCategory category, Pageable pageable) {
         Page<Post> posts;
         if (category != null) {
-            posts = postRepository.findByCategoryWithUserAndImages(category, pageable);
+            posts = postRepository.findByCategoryWithUser(category, pageable);
         } else {
-            posts = postRepository.findAllWithUserAndImages(pageable);
+            posts = postRepository.findAllWithUser(pageable);
         }
         return posts.map(PostResponseDto::new);
     }
 
     @Transactional(readOnly = true)
     public PostResponseDto getPost(Long id, User currentUser) {
-        Post post = postRepository.findById(id).orElseThrow(
+        Post post = postRepository.findByIdWithUser(id).orElseThrow(
                 () -> new IllegalArgumentException("게시글을 찾을 수 없습니다.")
         );
 
         long likeCount = post.getLikes().size();
         boolean isLiked = false;
+
         if (currentUser != null) {
-            isLiked = post.getLikes().stream()
-                    .anyMatch(postLike -> postLike.getUser().getId().equals(currentUser.getId()));
+            isLiked = postLikeRepository.findByUserAndPost(currentUser, post).isPresent();
         }
 
         return new PostResponseDto(post, likeCount, isLiked);
@@ -66,8 +64,9 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long id, User user) {
-        Post post = postRepository.findById(id)
+        Post post = postRepository.findByIdWithUser(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+
         if (!post.getUser().getId().equals(user.getId()) && user.getRole() != UserRole.ADMIN) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
@@ -77,7 +76,9 @@ public class PostService {
 
     @Transactional
     public void updatePost(Long postId, PostRequestDto requestDto, User user) {
-        Post post = findPost(postId);
+        Post post = postRepository.findByIdWithUser(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+
         if (!post.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("게시글 수정 권한이 없습니다.");
         }
@@ -85,22 +86,17 @@ public class PostService {
         List<Image> existingImages = post.getImages();
         String content = requestDto.getContent();
 
-        List<Image> imagesToDelete = existingImages.stream()
-                .filter(image -> !content.contains(image.getImageUrl()))
+        List<String> imageUrlsToDelete = existingImages.stream()
+                .map(Image::getImageUrl)
+                .filter(url -> !content.contains(url))
                 .toList();
 
-        for (Image image : imagesToDelete) {
-            imageRepository.delete(image);
+        if (!imageUrlsToDelete.isEmpty()) {
+            imageRepository.deleteAllByImageUrlIn(imageUrlsToDelete);
         }
 
         post.setTitle(requestDto.getTitle());
         post.setContent(content);
-    }
-
-    private Post findPost(Long id) {
-        return postRepository.findById(id).orElseThrow(()->
-                new IllegalArgumentException("존재하지 않는 게시글입니다.")
-        );
     }
 
     @Transactional(readOnly = true)

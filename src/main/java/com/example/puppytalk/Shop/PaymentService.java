@@ -30,7 +30,6 @@ public class PaymentService {
 
         if (order.getStatus() == OrderStatus.PENDING) {
             order.setStatus(OrderStatus.ORDER);
-            orderRepository.save(order);
         }
 
         Payment payment = Payment.builder()
@@ -46,13 +45,11 @@ public class PaymentService {
     }
 
     public void cancelPayment(String impUid) throws IamportResponseException, IOException {
-
         if (impUid == null || impUid.isEmpty()) {
             throw new IllegalArgumentException("결제 고유번호(impUid)가 없습니다.");
         }
 
         CancelData cancelData = new CancelData(impUid, true);
-
         IamportResponse<com.siot.IamportRestClient.response.Payment> response = iamportClient.cancelPaymentByImpUid(cancelData);
 
         if (response.getCode() != 0) {
@@ -61,10 +58,13 @@ public class PaymentService {
 
         log.info("결제 취소 성공! imp_uid: {}", impUid);
 
-        Payment payment = paymentRepository.findByImpUid(impUid)
-                .orElse(null);
-        if (payment != null) {
-            payment.setStatus("CANCEL");
+        Payment payment = paymentRepository.findByImpUidWithOrder(impUid)
+                .orElseThrow(() -> new RuntimeException("해당 결제 내역이 존재하지 않습니다."));
+
+        payment.setStatus("CANCEL");
+
+        if (payment.getOrder() != null) {
+            payment.getOrder().setStatus(OrderStatus.CANCEL);
         }
     }
 }

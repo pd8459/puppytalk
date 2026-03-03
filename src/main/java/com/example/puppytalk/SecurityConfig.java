@@ -51,7 +51,9 @@ public class SecurityConfig {
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
                 "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products",
-                "/api/user/**"
+                "/api/user/**", "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html"
         };
 
         http.authorizeHttpRequests(authorize -> authorize
