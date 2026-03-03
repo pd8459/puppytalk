@@ -58,6 +58,98 @@
 * **견종 분석:** PyTorch로 직접 훈련시킨 CNN 모델을 통해 업로드된 반려견 사진의 품종을 분석합니다.
 * **지능형 챗봇:** SentenceTransformers를 활용하여 사용자의 질문 의도를 파악하고, 반려견 양육 관련 정보를 답변합니다.
 
+## 🚀 대규모 트래픽 대비 성능 최적화 및 병목 분석
+
+### 1️⃣ 실험 환경 및 조건
+* **Framework:** Spring Boot 3.x
+* **Web Server:** Embedded Tomcat
+* **Database:** MySQL 8.0
+* **Cache:** Redis 7.0 (Docker)
+* **Load Test Tool:** nGrinder (Single Agent)
+* **Infra:** MacBook M4 Pro (12-core CPU / 16GB RAM, Local 환경)
+* **Test Scenario:** 댓글 10,000개 이상이 존재하는 단일 게시글 상세 조회 집중 부하 테스트
+* **VUser Range:** 500 ~ 1,000
+> ※ 본 테스트는 단일 로컬 머신 환경에서 수행되었으며, 네트워크 지연이 없는 Loopback 구조입니다.
+
+---
+
+### 2️⃣ 문제 정의 및 기준 지표 (Baseline)
+게시글 상세 조회 시, 대량의 댓글 데이터를 매 요청마다 DB에서 조회하면서 심각한 I/O 병목이 발생했습니다. VUser 500 부하 테스트 결과, TPS는 200대에서 정체되었고 응답 시간은 2초를 초과했습니다.
+
+| VUser | Peak TPS | Avg Response Time | Error Rate | 비고 |
+| :--- | :--- | :--- | :--- | :--- |
+| 500 | 200 | 2,100ms | 0% | DB I/O 병목 발생 |
+
+---
+
+### 3️⃣ 가설 설정 및 실험 설계
+* **가설 1:** 병목의 근본 원인은 매 요청마다 발생하는 DB Full Scan일 것이다. 
+* **가설 2:** 자주 조회되는 데이터(1페이지 댓글)를 In-Memory 캐시에 적재(Cache-Aside)하면 DB 부하를 차단할 수 있을 것이다.
+* **가설 3:** 캐시 적용 후에도 트래픽이 증가하면 WAS(Tomcat)의 Thread Pool 설정이 새로운 병목 지점이 될 것이다.
+
+---
+
+### 4️⃣ 실험 ① Redis Cache-Aside 전략 도입
+1페이지 댓글 데이터에 대해 Redis 캐시를 적용하여 DB 접근을 최소화했습니다.
+
+| VUser | Peak TPS | Avg Response Time | Error Rate | 비고 |
+| :--- | :--- | :--- | :--- | :--- |
+| 500 | 938 | 793ms | 0% | TPS 약 4.6배 향상 |
+
+**🎯 검증 결과**
+* **캐시 적중(Cache Hit) 시 DB 쿼리 실행이 발생하지 않음을 Hibernate 로그를 통해 확인**했습니다. (Warm-up 이후 기준)
+* 응답 시간이 2,100ms ➡️ 793ms로 약 62% 감소했습니다.
+
+**⚠ 추가 트러블슈팅**
+* `@Cacheable(sync=true)` 옵션 사용 시 동일 키에 대한 Lock 경합이 발생하여 이를 제거했습니다.
+* `LocalDateTime` 및 `PageImpl` 객체 캐싱 시 발생한 역직렬화 에러를 커스텀 DTO와 `JavaTimeModule` 설정으로 해결했습니다.
+
+---
+
+### 5️⃣ 실험 ② Thread Pool 확장과 리소스 한계 검증
+처리량을 더욱 극대화하기 위해 Tomcat Thread를 늘려(max-threads=500) 부하 테스트를 진행했습니다.
+
+| VUser | Peak TPS | Avg Response Time | Error Rate | 비고 |
+| :--- | :--- | :--- | :--- | :--- |
+| 500 | 1,554 | 341ms | **52% (24.6K)** | 한계 초과 구간 |
+
+**🔎 결과 분석**
+* Thread 확장은 일시적으로 처리량(Peak TPS 1,554)을 크게 증가시켰으나, **OS 레벨의 네트워크 소켓 한계를 초과하고 Context Switching 비용이 급증하면서 Error Rate가 52%까지 치솟았습니다.**
+* 즉, 하드웨어 스펙을 고려하지 않은 무작정 확장은 오히려 시스템 안정성을 무너뜨림을 데이터로 확인했습니다.
+
+---
+
+### 6️⃣ 최종 검증: 단일 노드 Sweet Spot 도출
+안정성과 처리량의 최적 균형을 찾기 위해 Tomcat Thread(`max-threads=200`) 및 Redis Connection Pool(`max-active=200`)을 재조정하고, 부하를 더 높여 최종 검증을 수행했습니다.
+
+> **📊 성능 개선 및 안정성 확보 시각화 지표**
+
+<img width="1000" height="600" alt="Image" src="https://github.com/user-attachments/assets/cbc6cf75-69f6-4c0a-bf9a-cc837194b251" />
+*(VUser 증가에 따른 TPS 처리량 추세 및 안정화 구간)*
+
+<img width="1000" height="600" alt="Image" src="https://github.com/user-attachments/assets/bb115f5f-c56c-4da4-b1e1-c25c8e76a874" />
+*(DB 직접 조회 vs Redis 캐싱 vs 최종 튜닝 후 응답속도 비교)*
+<img width="1000" height="600" alt="Image" src="https://github.com/user-attachments/assets/03bf64fc-99bd-43e9-a25a-53b0406ae9bd" />*(Thread 500 오버프로비저닝 시 에러율 폭증 vs Thread 200 최적화 시 0% 방어)*
+
+| VUser | Peak TPS | Avg Response Time | Error Rate | 비고 |
+| :--- | :--- | :--- | :--- | :--- |
+| **700** | **1,036** | **714ms** | **0%** | **최종 안정화 완료** |
+| 800+ | 0 (Fail) | - | - | nGrinder Agent OOM 발생 |
+
+**🔎 최종 결과 해석**
+* 단일 노드 환경에서 **VUser 700 트래픽까지 에러율 0%로 방어**하는 데 성공했습니다.
+* VUser 800 이상 부하 주입 시, 타겟 애플리케이션의 한계가 아닌 **부하를 생성하는 인프라(nGrinder Agent JVM)의 메모리 한계(OOM)가 먼저 도달**함을 확인했습니다.
+
+---
+
+### 7️⃣ 핵심 인사이트 및 확장 전략 (Scale-Out)
+* 캐시 도입과 튜닝을 통해 **단일 서버 기준 TPS를 약 5배 이상 향상**시켰습니다.
+* 단일 머신의 자원(수직 확장)에는 명확한 물리적 한계가 존재함을 실험적으로 증명했습니다. 
+* **Production 환경 적용 시 확장 계획:**
+  * 단일 노드의 한계를 극복하기 위해 Nginx 기반 Load Balancing 및 다중 WAS 인스턴스(Scale-Out) 구성을 고려합니다.
+  * 단일 Redis 장애에 대비하여 Redis Cluster 또는 Replication 구조를 도입합니다.
+  * 병목 지점을 실시간으로 추적하기 위해 Prometheus + Grafana 기반 모니터링 파이프라인을 구축할 계획입니다.
+
 <br>
 
 ## 💾 ERD 설계 (Database Design)
