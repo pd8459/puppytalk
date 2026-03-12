@@ -33,16 +33,36 @@ public class OrderService {
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cartItems) {
+            Long productId = cartItem.getProduct().getId();
+            int count = cartItem.getCount();
 
-            Product product = productRepository.findByIdWithLock(cartItem.getProduct().getId())
+            Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
-            OrderItem orderItem = OrderItem.createOrderItem(
-                    product,
-                    product.getCurrentPrice(),
-                    cartItem.getCount()
-            );
-            orderItems.add(orderItem);
+            boolean isTimeDeal = product.getSaleStartTime() != null;
+
+            if (isTimeDeal) {
+                Product lockedProduct = productRepository.findByIdWithLock(productId)
+                        .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+                if (lockedProduct.getStockQuantity() < count) {
+                    throw new IllegalArgumentException("재고가 부족합니다.");
+                }
+
+                orderItems.add(OrderItem.createOrderItem(lockedProduct, lockedProduct.getCurrentPrice(), count));
+            } else {
+                int updatedCount = productRepository.decreaseStock(productId, count);
+                if (updatedCount == 0) {
+                    throw new IllegalArgumentException("재고가 부족합니다.");
+                }
+
+                Product updatedProduct = productRepository.findById(productId).get();
+                if (updatedProduct.getStockQuantity() == 0) {
+                    updatedProduct.changeStatus(ProductStatus.SOLD_OUT);
+                }
+
+                orderItems.add(OrderItem.createNormalOrderItem(updatedProduct, updatedProduct.getCurrentPrice(), count));
+            }
         }
 
         Order order = Order.createOrder(user, orderItems);
@@ -97,7 +117,7 @@ public class OrderService {
         List<Order> orders = orderRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
 
         return orders.stream()
-                .map(order -> new OrderHistoryDto(order))
+                .map(OrderHistoryDto::new)
                 .collect(Collectors.toList());
     }
 
@@ -136,23 +156,36 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCEL_REQUESTED);
     }
 
-    @Transactional
     public Long directOrder(User user, Long productId, int count) {
-
-        Product product = productRepository.findByIdWithLock(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
-        if (product.getStockQuantity() < count) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
-        }
+        boolean isTimeDeal = product.getSaleStartTime() != null;
 
         List<OrderItem> orderItems = new ArrayList<>();
-        OrderItem orderItem = OrderItem.createOrderItem(
-                product,
-                product.getCurrentPrice(),
-                count
-        );
-        orderItems.add(orderItem);
+
+        if (isTimeDeal) {
+            Product lockedProduct = productRepository.findByIdWithLock(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+            if (lockedProduct.getStockQuantity() < count) {
+                throw new IllegalArgumentException("재고가 부족합니다.");
+            }
+
+            orderItems.add(OrderItem.createOrderItem(lockedProduct, lockedProduct.getCurrentPrice(), count));
+        } else {
+            int updatedCount = productRepository.decreaseStock(productId, count);
+            if (updatedCount == 0) {
+                throw new IllegalArgumentException("재고가 부족합니다.");
+            }
+
+            Product updatedProduct = productRepository.findById(productId).get();
+            if (updatedProduct.getStockQuantity() == 0) {
+                updatedProduct.changeStatus(ProductStatus.SOLD_OUT);
+            }
+
+            orderItems.add(OrderItem.createNormalOrderItem(updatedProduct, updatedProduct.getCurrentPrice(), count));
+        }
 
         Order order = Order.createOrder(user, orderItems);
         orderRepository.save(order);

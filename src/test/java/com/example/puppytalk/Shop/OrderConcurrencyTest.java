@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class OrderConcurrencyTest {
+public class    OrderConcurrencyTest {
 
     @Autowired
     private OrderService orderService;

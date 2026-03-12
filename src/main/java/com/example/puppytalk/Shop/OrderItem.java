@@ -29,12 +29,17 @@ public class OrderItem {
     public static OrderItem createOrderItem(Product product, int orderPrice, int count) {
         OrderItem orderItem = new OrderItem();
         orderItem.setProduct(product);
-
         orderItem.setOrderPrice(product.getSalePrice());
-
         orderItem.setCount(count);
+        product.removeStock(count);
+        return orderItem;
+    }
 
-        product.removeStock(count); // 재고 감소
+    public static OrderItem createNormalOrderItem(Product product, int orderPrice, int count) {
+        OrderItem orderItem = new OrderItem();
+        orderItem.setProduct(product);
+        orderItem.setOrderPrice(product.getSalePrice());
+        orderItem.setCount(count);
         return orderItem;
     }
 

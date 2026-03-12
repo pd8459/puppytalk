@@ -52,8 +52,10 @@ public class SecurityConfig {
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
                 "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products",
                 "/api/user/**", "/v3/api-docs/**",
+                "/v3/api-docs/**",
                 "/swagger-ui/**",
-                "/swagger-ui.html"
+                "/swagger-ui.html",
+                "/api/products/**"
         };
 
         http.authorizeHttpRequests(authorize -> authorize
@@ -62,6 +64,7 @@ public class SecurityConfig {
                 .requestMatchers("/shop/admin/**", "/shop/register").hasAuthority("ADMIN")
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
         );
 

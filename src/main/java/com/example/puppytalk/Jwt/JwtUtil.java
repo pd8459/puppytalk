@@ -2,7 +2,7 @@ package com.example.puppytalk.Jwt;
 
 import com.example.puppytalk.User.UserRole;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.DecodingException; // 👈 추가됨
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -60,11 +62,16 @@ public class JwtUtil {
         try {
             token = URLEncoder.encode(token, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
 
-            Cookie cookie = new Cookie(AUTHORIZATION_HEADER, token);
-            cookie.setPath("/");
-            cookie.setMaxAge(60 * 60);
-            cookie.setHttpOnly(true);
-            response.addCookie(cookie);
+            ResponseCookie cookie = ResponseCookie.from(AUTHORIZATION_HEADER, token)
+                    .path("/")
+                    .maxAge(60 * 60)
+                    .httpOnly(true)
+                    .sameSite("Lax")
+                    .secure(false)
+                    .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         } catch (Exception e) {
             log.error(e.getMessage());
         }
@@ -112,11 +119,8 @@ public class JwtUtil {
         } catch (IllegalArgumentException e) {
             log.error("JWT claims is empty");
         } catch (DecodingException e) {
-            // ⬇️ [핵심] 이 에러가 잡히지 않아서 서버가 멈췄던 것입니다.
-            // % 문자 등이 섞여있어서 디코딩 못할 때 발생하는 에러를 여기서 잡습니다.
             log.error("JWT decoding failed: {}", e.getMessage());
         } catch (Exception e) {
-            // 그 외 모든 에러도 안전하게 처리
             log.error("JWT validation error: {}", e.getMessage());
         }
         return false;
