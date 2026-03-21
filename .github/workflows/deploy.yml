@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'corretto'
@@ -27,7 +27,7 @@ jobs:
         run: ./gradlew clean build -x test
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -38,18 +38,14 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/puppytalk-api:latest
 
       - name: Deploy to AWS EC2
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_KEY }}
           script: |
             cd ~/puppytalk
-            
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/puppytalk-api:latest
-            
             sudo docker tag ${{ secrets.DOCKER_USERNAME }}/puppytalk-api:latest puppytalk_puppytalk-api:latest
-            
             sudo docker-compose up -d puppytalk-api
-            
             sudo docker image prune -f
