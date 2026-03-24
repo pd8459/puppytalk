@@ -22,6 +22,7 @@ public class AdminService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
     public AdminDashboardDto getDashboardStats() {
@@ -92,4 +93,47 @@ public class AdminService {
         }
 
     }
+
+    @Transactional(readOnly = true)
+    public Page<Product> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable);
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+        productRepository.delete(product);
+    }
+
+    @Transactional(readOnly = true)
+    public Product getProduct(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+    }
+
+    @Transactional
+    public void updateProduct(Long productId, AdminController.ProductUpdateRequest request) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+        product.updateProduct(
+                request.getName(),
+                request.getOriginalPrice(),
+                request.getDiscountRate(),
+                request.getSalePrice(),
+                request.getDescription(),
+                request.getThumbnailUrl(),
+                request.getStockQuantity(),
+                request.getTargetBreed(),
+                request.getRecommendedSize(),
+                request.getSaleStartTime(),
+                request.getSaleEndTime()
+        );
+
+        if (request.getStatus() != null) {
+            product.changeStatus(request.getStatus());
+        }
+    }
+
 }

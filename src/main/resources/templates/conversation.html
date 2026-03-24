@@ -2,48 +2,269 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PuppyTalk - 쪽지</title>
+
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        .chat-container { max-width: 800px; margin: auto; }
-        .chat-box { height: 60vh; overflow-y: auto; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
-        .message { display: flex; align-items: flex-start; margin-bottom: 1rem; }
-        .message p { max-width: 70%; padding: 0.5rem 1rem; border-radius: 15px; margin-bottom: 0.25rem; word-break: break-word; }
-        .message.outgoing { justify-content: flex-end; }
-        .message.outgoing p {
-            background-color: #0d6efd;
-            color: white;
-            font-size: 1rem;
-            line-height: 1.4rem;
-            padding: 0.5rem 0.8rem;
-            border-radius: 15px;
-            display: inline-block;
-            max-width: 100%;
-            margin: 0;
+        :root {
+            --primary-color: #FF8A65;
+            --primary-hover: #FF7043;
+            --bg-color: #FFF9F5;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --border-color: #EEEEEE;
+            --input-bg: #F8F9FA;
+            --chat-bg: #FFF3EB;
         }
-        .message.incoming p { background-color: #e9ecef; }
-        .profile-img { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
-        #reply-content { height: 38px; line-height: 38px; resize: none; overflow-y: hidden; }
-        .message.outgoing .profile-img { display: none; }
-        .message.outgoing strong { display: none; }
-        .message.outgoing small { text-align: right; display: block; }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 3rem;
+        }
+
+        .chat-wrapper {
+            max-width: 600px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.04);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 75vh;
+            min-height: 500px;
+        }
+
+        .chat-header {
+            background-color: white;
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 10;
+        }
+
+        .btn-back {
+            color: var(--text-main);
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-back:hover {
+            color: var(--primary-color);
+        }
+
+        .header-title {
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .chat-body {
+            flex-grow: 1;
+            background-color: var(--chat-bg);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .chat-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-body::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            max-width: 100%;
+        }
+
+        .message.incoming {
+            flex-direction: row;
+        }
+
+        .message.outgoing {
+            flex-direction: row-reverse;
+        }
+
+        .profile-img {
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            background-color: white;
+            flex-shrink: 0;
+        }
+
+        .message.incoming .profile-img {
+            margin-right: 0.8rem;
+        }
+
+        .message.outgoing .profile-img {
+            display: none;
+        }
+
+        .msg-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 75%;
+        }
+
+        .message.outgoing .msg-content-wrapper {
+            align-items: flex-end;
+        }
+
+        .sender-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin-bottom: 0.3rem;
+            margin-left: 0.2rem;
+        }
+
+        .message.outgoing .sender-name {
+            display: none;
+        }
+
+        .bubble-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .message.outgoing .bubble-group {
+            flex-direction: row-reverse;
+        }
+
+        .bubble {
+            padding: 0.7rem 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-break: break-word;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .bubble-incoming {
+            background-color: white;
+            color: var(--text-main);
+            border-radius: 4px 18px 18px 18px;
+            border: 1px solid var(--border-color);
+        }
+
+        .bubble-outgoing {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 18px 4px 18px 18px;
+        }
+
+        .msg-time {
+            font-size: 0.75rem;
+            color: #A0A0A0;
+            white-space: nowrap;
+            margin-bottom: 0.2rem;
+        }
+
+        .chat-footer {
+            background-color: white;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-color);
+            background-color: white;
+        }
+
+        .btn-send {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-send:hover {
+            background-color: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-sub);
+        }
+
+        .empty-chat i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
     </style>
 </head>
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container mt-4 chat-container">
-    <div class="d-flex align-items-center mb-3">
-        <a href="/messages" class="btn btn-light me-3">←</a>
-        <h3 id="conversation-header" class="mb-0"></h3>
-    </div>
-    <div id="chat-box" class="chat-box bg-light"></div>
-    <form id="reply-form" class="mt-3">
-        <div class="input-group">
-            <input type="text" id="reply-content" class="form-control" placeholder="메시지를 입력하세요..." required autocomplete="off">
-            <button class="btn btn-primary" type="submit">답장</button>
+<div class="container">
+    <div class="chat-wrapper">
+        <div class="chat-header">
+            <a href="/messages" class="btn-back"><i class="fa-solid fa-chevron-left"></i></a>
+            <h3 id="conversation-header" class="header-title">대화방</h3>
         </div>
-    </form>
+
+        <div id="chat-box" class="chat-body">
+            <div class="empty-chat">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+
+        <form id="reply-form" class="chat-footer">
+            <input type="text" id="reply-content" class="chat-input" placeholder="따뜻한 메시지를 입력해보세요" required autocomplete="off">
+            <button class="btn-send" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -53,6 +274,9 @@
     const header = document.getElementById('conversation-header');
     const replyForm = document.getElementById('reply-form');
     const replyContent = document.getElementById('reply-content');
+
+    const token = localStorage.getItem('Authorization');
+
     let otherUserUsername = '';
     let currentUserProfileImg = '/images/default_profile.png';
     let otherUserProfileImg = '/images/default_profile.png';
@@ -70,8 +294,12 @@
     async function loadMessages() {
         try {
             const [messagesResponse, profileResponse] = await Promise.all([
-                fetch(`/api/messages/${conversationId}`),
-                fetch('/api/profile')
+                fetch(`/api/messages/${conversationId}`, {
+                    headers: { 'Authorization': token }
+                }),
+                fetch('/api/profile', {
+                    headers: { 'Authorization': token }
+                })
             ]);
 
             if (!messagesResponse.ok) {
@@ -82,6 +310,7 @@
                 }
                 throw new Error('메시지를 불러오지 못했습니다.');
             }
+
             const messages = await messagesResponse.json();
 
             if (profileResponse.ok) {
@@ -95,61 +324,68 @@
             if (messages.length > 0) {
                 const firstMessage = messages[0];
                 if (firstMessage.senderUsername === currentUsername) {
-                    header.textContent = `${firstMessage.receiverNickname}님과의 대화`;
+                    header.textContent = `${firstMessage.receiverNickname}`;
                     otherUserUsername = firstMessage.receiverUsername;
                     if(firstMessage.receiverProfileImageUrl) otherUserProfileImg = firstMessage.receiverProfileImageUrl;
                 } else {
-                    header.textContent = `${firstMessage.senderNickname}님과의 대화`;
+                    header.textContent = `${firstMessage.senderNickname}`;
                     otherUserUsername = firstMessage.senderUsername;
                     if(firstMessage.senderProfileImageUrl) otherUserProfileImg = firstMessage.senderProfileImageUrl;
                 }
+
+                messages.forEach(msg => {
+                    const isSentByMe = msg.senderUsername === currentUsername;
+                    const messageWrapper = document.createElement('div');
+                    messageWrapper.className = `message ${isSentByMe ? 'outgoing' : 'incoming'}`;
+
+                    const timeString = new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+                    let html = '';
+                    if (isSentByMe) {
+                        html = `
+                            <div class="msg-content-wrapper">
+                                <div class="bubble-group">
+                                    <div class="bubble bubble-outgoing">${msg.content}</div>
+                                    <div class="msg-time">${timeString}</div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html = `
+                            <img src="${otherUserProfileImg}" class="profile-img" onerror="this.src='/images/default_profile.png'">
+                            <div class="msg-content-wrapper">
+                                <div class="sender-name">${msg.senderNickname}</div>
+                                <div class="bubble-group">
+                                    <div class="bubble bubble-incoming">${msg.content}</div>
+                                    <div class="msg-time">${timeString}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    messageWrapper.innerHTML = html;
+                    chatBox.appendChild(messageWrapper);
+                });
             } else {
-                header.textContent = '대화 내용이 없습니다.';
+                header.textContent = '대화방';
+                chatBox.innerHTML = `
+                    <div class="empty-chat">
+                        <i class="fa-regular fa-comments"></i>
+                        <p>아직 대화 내용이 없습니다.</p>
+                    </div>
+                `;
             }
 
-            messages.forEach(msg => {
-                const messageWrapper = document.createElement('div');
-                const isSentByMe = msg.senderUsername === currentUsername;
-                messageWrapper.className = isSentByMe ? 'message outgoing' : 'message incoming';
-
-                const profileImg = isSentByMe ? currentUserProfileImg : otherUserProfileImg;
-                const timeString = new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-
-                const bubbleHtml = isSentByMe
-                    ? `
-                        <div class="flex-grow-1 text-end">
-                            <p class="ms-auto">${msg.content}</p>
-                            <small class="text-muted">${timeString}</small>
-                        </div>
-                    `
-                    : `
-                        <img src="${profileImg}" alt="profile" class="profile-img me-2">
-                        <div class="flex-grow-1">
-                            <strong style="font-size: 0.9em;">${msg.senderNickname}</strong>
-                            <p>${msg.content}</p>
-                            <small class="text-muted">${timeString}</small>
-                        </div>
-                    `;
-
-                messageWrapper.innerHTML = bubbleHtml;
-                chatBox.appendChild(messageWrapper);
-            });
             chatBox.scrollTop = chatBox.scrollHeight;
         } catch (error) {
             console.error(error);
-            chatBox.innerHTML = `<p class="text-center text-danger">오류가 발생했습니다.</p>`;
+            chatBox.innerHTML = `
+                <div class="empty-chat text-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <p>오류가 발생했습니다.</p>
+                </div>
+            `;
         }
     }
-
-    replyContent.addEventListener("input", () => {
-        const value = replyContent.value.replace(/\n/g, "");
-        let result = "";
-        for (let i = 0; i < value.length; i++) {
-            if (i > 0 && i % 34 === 0) result += "\n";
-            result += value[i];
-        }
-        replyContent.value = result;
-    });
 
     replyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -159,7 +395,10 @@
         try {
             const response = await fetch(`/api/messages/${otherUserUsername}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
                 body: JSON.stringify({ content: content })
             });
             if (response.ok) {

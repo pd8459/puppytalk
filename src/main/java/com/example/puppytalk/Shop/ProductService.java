@@ -104,4 +104,16 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("상품이 없습니다."));
         product.changeStatus(ProductStatus.HIDDEN);
     }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> getProducts(String keyword, Pageable pageable) {
+        Page<Product> productPage;
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            productPage = productRepository.findAllWithCategory(pageable);
+        } else {
+            productPage = productRepository.searchByNameWithCategory(keyword, pageable);
+        }
+        return productPage.map(ProductResponseDto::new);
+    }
 }

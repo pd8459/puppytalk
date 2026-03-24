@@ -2,6 +2,7 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PuppyTalk - 멍멍 쇼핑</title>
 
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -9,36 +10,110 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary-color: #FF8A65;
+            --primary-hover: #FF7043;
+            --bg-color: #FFF9F5;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --border-color: #EEEEEE;
+            --input-bg: #F8F9FA;
+        }
+
         body {
             font-family: 'Pretendard', sans-serif;
-            background-color: #f8f9fa;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 4rem;
         }
+
         .promo-banner {
-            background: linear-gradient(135deg, #6f42c1 0%, #fd7e14 100%);
+            background: linear-gradient(135deg, #FFB74D 0%, #FF8A65 100%);
             color: white;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 40px;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 20px rgba(111, 66, 193, 0.15);
+            box-shadow: 0 10px 20px rgba(255, 138, 101, 0.2);
         }
-        .product-card {
+
+        .promo-banner h4 {
+            font-weight: 800;
+        }
+
+        .custom-input {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            background-color: var(--input-bg);
+            transition: all 0.2s;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .custom-input:focus {
+            border-color: var(--primary-color);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(255, 138, 101, 0.1);
+        }
+
+        .btn-custom {
+            background-color: var(--primary-color);
+            color: white;
             border: none;
             border-radius: 12px;
-            overflow: hidden;
-            background: #fff;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 700;
+            padding: 0.8rem 1.5rem;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
+
+        .btn-custom:hover {
+            background-color: var(--primary-hover);
+            color: white;
+        }
+
+        .filter-btn {
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            background-color: white;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .product-card {
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
         .product-card:hover {
             transform: translateY(-6px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+            border-color: var(--primary-color);
         }
+
         .img-wrapper {
             position: relative;
             width: 100%;
             padding-top: 100%;
-            background-color: #f1f3f5;
+            background-color: var(--input-bg);
             overflow: hidden;
         }
+
         .img-wrapper img {
             position: absolute;
             top: 0;
@@ -48,9 +123,11 @@
             object-fit: cover;
             transition: transform 0.3s ease;
         }
+
         .product-card:hover .img-wrapper img {
             transform: scale(1.05);
         }
+
         .badge-overlay {
             position: absolute;
             top: 12px;
@@ -60,31 +137,37 @@
             flex-direction: column;
             gap: 5px;
         }
+
         .badge-timedeal {
             background-color: #e02020;
             color: white;
-            font-weight: 600;
-            padding: 4px 8px;
+            font-weight: 700;
+            padding: 4px 10px;
             font-size: 0.75rem;
+            border-radius: 6px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             animation: pulse 2s infinite;
         }
+
         .badge-rank {
             background-color: #111;
             color: white;
-            font-weight: bold;
-            padding: 4px 8px;
+            font-weight: 700;
+            padding: 4px 10px;
             font-size: 0.75rem;
+            border-radius: 6px;
         }
+
         .seller-name {
             font-size: 0.8rem;
-            color: #868e96;
+            color: var(--text-sub);
             margin-bottom: 4px;
         }
+
         .product-title {
             font-size: 1rem;
-            font-weight: 500;
-            color: #212529;
+            font-weight: 600;
+            color: var(--text-main);
             line-height: 1.4;
             height: 2.8em;
             overflow: hidden;
@@ -94,47 +177,67 @@
             -webkit-box-orient: vertical;
             margin-bottom: 12px;
         }
+
         .price-area {
             display: flex;
             align-items: baseline;
             gap: 6px;
             margin-bottom: 8px;
         }
+
         .discount-rate {
             color: #fa622f;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 1.25rem;
         }
+
         .final-price {
-            font-weight: 700;
+            font-weight: 800;
             font-size: 1.25rem;
-            color: #111;
+            color: var(--text-main);
         }
+
         .original-price {
             color: #adb5bd;
             text-decoration: line-through;
             font-size: 0.85rem;
             margin-bottom: 2px;
         }
-        .filter-btn {
-            border-radius: 20px;
-            padding: 6px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
+
+        .btn-load-more {
+            background-color: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 30px;
+            padding: 12px 40px;
+            font-weight: 700;
+            transition: all 0.2s;
         }
+
+        .btn-load-more:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
         .skeleton {
-            background: #eee;
             background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
             background-size: 200% 100%;
             animation: 1.5s shine linear infinite;
         }
+
         @keyframes shine {
             to { background-position-x: -200%; }
         }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
+        }
+
+        .product-link {
+            text-decoration: none;
+            color: inherit;
         }
     </style>
 </head>
@@ -145,24 +248,29 @@
 
     <div class="promo-banner d-flex justify-content-between align-items-center">
         <div>
-            <h4 class="fw-bold mb-2">🎉 봄맞이 댕댕이 기획전</h4>
-            <p class="mb-0 text-white-50">인기 간식 & 용품 최대 50% 할인! 지금 바로 확인하세요.</p>
+            <h4 class="mb-2">🎉 봄맞이 댕댕이 기획전</h4>
+            <p class="mb-0 text-white" style="opacity: 0.9;">인기 간식 & 용품 최대 50% 할인! 지금 바로 확인하세요.</p>
         </div>
+    </div>
 
-
+    <div class="mb-4">
+        <form id="search-form" class="d-flex gap-2">
+            <input type="text" id="search-keyword" class="custom-input flex-grow-1" placeholder="우리 강아지가 좋아하는 간식, 장난감을 검색해보세요!">
+            <button type="submit" class="btn-custom"><i class="fa-solid fa-magnifying-glass me-1"></i> 검색</button>
+        </form>
     </div>
 
     <div class="d-flex align-items-center mb-4 overflow-auto pb-2" style="white-space: nowrap;">
-        <h4 class="fw-bold mb-0 me-4">추천 상품</h4>
-        <button class="btn btn-dark filter-btn me-2">전체보기</button>
-        <button class="btn btn-outline-secondary filter-btn me-2">🐶 내 강아지 맞춤</button>
-        <button class="btn btn-outline-secondary filter-btn me-2">인기 간식</button>
-        <button class="btn btn-outline-secondary filter-btn">신상품</button>
+        <h4 class="fw-bold mb-0 me-4" style="color: var(--text-main);">추천 상품</h4>
+        <button class="filter-btn active me-2">전체보기</button>
+        <button class="filter-btn me-2">🐶 내 강아지 맞춤</button>
+        <button class="filter-btn me-2">인기 간식</button>
+        <button class="filter-btn">신상품</button>
     </div>
 
     <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4" id="product-list">
         <div class="col" th:each="num : ${#numbers.sequence(1, 4)}">
-            <div class="card product-card">
+            <div class="product-card">
                 <div class="img-wrapper skeleton"></div>
                 <div class="card-body p-3">
                     <div class="skeleton mb-2" style="height: 12px; width: 40%; border-radius: 4px;"></div>
@@ -174,7 +282,7 @@
     </div>
 
     <div class="text-center mt-5 mb-5">
-        <button id="btn-load-more" class="btn btn-outline-dark btn-lg px-5 rounded-pill fw-bold" onclick="loadMore()" style="display: none;">
+        <button id="btn-load-more" class="btn-load-more" onclick="loadMore()" style="display: none;">
             상품 더보기 <i class="fa-solid fa-chevron-down ms-1"></i>
         </button>
     </div>
@@ -183,19 +291,32 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     let currentPage = 0;
+    let currentKeyword = '';
     const listContainer = document.getElementById('product-list');
     const loadMoreBtn = document.getElementById('btn-load-more');
-
-    window.addEventListener('DOMContentLoaded', () => loadProducts(currentPage));
 
     function loadMore() {
         currentPage++;
         loadProducts(currentPage);
     }
 
+    window.addEventListener('DOMContentLoaded', () => loadProducts(currentPage));
+
+    document.getElementById('search-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        currentKeyword = document.getElementById('search-keyword').value.trim();
+        currentPage = 0;
+        loadProducts(currentPage);
+    });
+
     async function loadProducts(page) {
         try {
-            const response = await fetch(`/api/shop/products?page=${page}`);
+            let url = `/api/shop/products?page=${page}`;
+            if (currentKeyword) {
+                url += `&keyword=${encodeURIComponent(currentKeyword)}`;
+            }
+
+            const response = await fetch(url);
 
             if (!response.ok) throw new Error('상품 목록을 불러오는데 실패했습니다.');
 
@@ -209,8 +330,8 @@
             if (products.length === 0 && page === 0) {
                 listContainer.innerHTML = `
                     <div class="col-12 text-center py-5 my-5">
-                        <i class="fa-solid fa-box-open fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted fw-bold">등록된 상품이 없습니다.</h5>
+                        <i class="fa-solid fa-box-open fa-3x text-muted mb-3" style="opacity: 0.5;"></i>
+                        <h5 class="fw-bold" style="color: var(--text-sub);">${currentKeyword ? `'${currentKeyword}' 검색 결과가 없습니다.` : '등록된 상품이 없습니다.'}</h5>
                     </div>`;
                 loadMoreBtn.style.display = 'none';
                 return;
@@ -223,11 +344,11 @@
                 col.className = 'col';
 
                 let badgesHtml = '';
-                if (page === 0 && index < 3) {
-                    badgesHtml += `<span class="badge badge-rank rounded-1">BEST ${index + 1}</span>`;
+                if (page === 0 && index < 3 && !currentKeyword) {
+                    badgesHtml += `<span class="badge-rank">BEST ${index + 1}</span>`;
                 }
                 if (product.isTimeDealActive) {
-                    badgesHtml += `<span class="badge badge-timedeal rounded-1"><i class="fa-solid fa-clock"></i> 타임딜</span>`;
+                    badgesHtml += `<span class="badge-timedeal"><i class="fa-solid fa-clock"></i> 타임딜</span>`;
                 }
 
                 let priceHtml = '';
@@ -251,19 +372,19 @@
                 const randomReviewCnt = Math.floor(Math.random() * 500) + 10;
 
                 let tagHtml = '';
-                if (product.targetBreed) tagHtml += `<span class="badge bg-light text-dark border me-1">${product.targetBreed}</span>`;
-                if (product.recommendedSize && product.recommendedSize !== 'ALL') tagHtml += `<span class="badge bg-light text-dark border">${product.recommendedSize}</span>`;
+                if (product.targetBreed) tagHtml += `<span class="badge bg-light text-dark border me-1 rounded-pill px-2">${product.targetBreed}</span>`;
+                if (product.recommendedSize && product.recommendedSize !== 'ALL') tagHtml += `<span class="badge bg-light text-dark border rounded-pill px-2">${product.recommendedSize}</span>`;
 
                 col.innerHTML = `
-                    <a href="/shop/detail?id=${product.id}" class="text-decoration-none">
-                        <div class="card h-100 product-card">
+                    <a href="/shop/detail?id=${product.id}" class="product-link">
+                        <div class="product-card">
                             <div class="img-wrapper">
                                 <div class="badge-overlay">
                                     ${badgesHtml}
                                 </div>
                                 <img src="${product.thumbnailUrl || '/images/no-image.png'}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                             </div>
-                            <div class="card-body p-3 d-flex flex-column">
+                            <div class="card-body p-3 d-flex flex-column" style="flex-grow: 1;">
                                 <div class="seller-name">${product.sellerNickname || '퍼피톡 공식스토어'}</div>
                                 <h5 class="product-title">${product.name}</h5>
                                 <div class="mt-auto">
@@ -293,7 +414,7 @@
         } catch (error) {
             console.error(error);
             if (page === 0) {
-                listContainer.innerHTML = `<div class="col-12 text-center text-danger py-5"><p>오류가 발생했습니다: ${error.message}</p></div>`;
+                listContainer.innerHTML = `<div class="col-12 text-center py-5"><p style="color: var(--primary-color); font-weight: 600;">오류가 발생했습니다: ${error.message}</p></div>`;
             } else {
                 alert("추가 상품을 불러오는 중 오류가 발생했습니다.");
             }

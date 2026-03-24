@@ -2,32 +2,272 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PuppyTalk - 공개 프로필</title>
+
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        .profile-header { display: flex; align-items: center; margin-bottom: 2rem; }
-        .profile-img { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; margin-right: 1.5rem; }
-        .post-thumbnail { width: 100px; height: 100px; object-fit: cover; }
-        .pet-card-img { height: 100%; object-fit: cover; }
+        :root {
+            --primary-color: #FF8A65;
+            --primary-hover: #FF7043;
+            --bg-color: #FFF9F5;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --border-color: #EEEEEE;
+            --input-bg: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 5rem;
+        }
+
+        .profile-container {
+            max-width: 800px;
+            margin: 2.5rem auto;
+            padding: 0 15px;
+        }
+
+        .profile-header-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-header-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to right, #FFE0B2, #FFCCBC);
+            z-index: 0;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
+            margin-bottom: 1rem;
+            background-color: var(--input-bg);
+        }
+
+        .profile-name {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            position: relative;
+            z-index: 1;
+            margin-bottom: 0.2rem;
+        }
+
+        .section-title {
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--text-main);
+            margin: 2.5rem 0 1.2rem 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pet-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.01);
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+            transition: all 0.2s;
+            height: 100%;
+        }
+
+        .pet-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 20px rgba(255,138,101,0.1);
+        }
+
+        .pet-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 18px;
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .pet-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .pet-name {
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+        }
+
+        .pet-meta {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+
+        .pet-intro {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+            text-decoration: none !important;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary-color);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.04);
+        }
+
+        .post-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .post-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 0.4rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .post-excerpt {
+            color: var(--text-sub);
+            font-size: 0.95rem;
+            margin-bottom: 0.8rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-date {
+            font-size: 0.85rem;
+            color: #AAAAAA;
+            font-weight: 500;
+        }
+
+        .post-thumb {
+            width: 90px;
+            height: 90px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 20px;
+            padding: 4rem 2rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .pagination .page-link {
+            border: none;
+            border-radius: 10px;
+            margin: 0 4px;
+            color: var(--text-main);
+            font-weight: 700;
+            padding: 8px 16px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            box-shadow: 0 4px 10px rgba(255,138,101,0.3);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            background-color: transparent;
+            color: #ccc;
+            box-shadow: none;
+        }
+
+        .pagination .page-link:hover:not(.active) {
+            background-color: var(--input-bg);
+            color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container mt-4">
-    <div id="profile-header" class="profile-header"></div>
+<div class="profile-container">
+    <div id="profile-header-container"></div>
 
-    <div id="pet-list-section" class="mb-4" style="display: none;">
-        <h4>반려견 프로필</h4>
-        <div id="pet-list-container" class="row row-cols-1 row-cols-md-2 g-4"></div>
+    <div id="pet-list-section" style="display: none;">
+        <div class="section-title"><i class="fa-solid fa-paw" style="color: var(--primary-color);"></i> 반려견 프로필</div>
+        <div id="pet-list-container" class="row g-3"></div>
     </div>
-    <hr id="pet-post-divider" style="display: none;">
 
-    <h4>작성한 게시글</h4>
-    <div id="post-list" class="list-group"></div>
+    <div class="section-title"><i class="fa-solid fa-pen" style="color: var(--primary-color);"></i> 작성한 게시글</div>
+    <div id="post-list"></div>
 
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center" id="pagination"></ul>
+    <nav aria-label="Page navigation" class="mt-5">
+        <ul class="pagination justify-content-center flex-wrap" id="pagination"></ul>
     </nav>
 </div>
 
@@ -51,50 +291,51 @@
             renderPostList(profileData.posts);
             renderPagination(profileData.posts);
         } catch (error) {
-            document.querySelector('.container').innerHTML = `<h2>${error.message}</h2>`;
+            document.querySelector('.profile-container').innerHTML = `
+                <div class="empty-state mt-5 text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <h5 class="fw-bold">${error.message}</h5>
+                </div>
+            `;
         }
     }
 
     function renderProfileHeader(profileData) {
-        const headerContainer = document.getElementById('profile-header');
+        const headerContainer = document.getElementById('profile-header-container');
         const profileImg = profileData.profileImageUrl || '/images/default_profile.png';
         headerContainer.innerHTML = `
-            <img src="${profileImg}" alt="profile" class="profile-img">
-            <h2>${profileData.nickname}님의 프로필</h2>
+            <div class="profile-header-card">
+                <img src="${profileImg}" alt="profile" class="profile-avatar" onerror="this.src='/images/default_profile.png'">
+                <div class="profile-name">${profileData.nickname}</div>
+            </div>
         `;
     }
 
     function renderPetList(pets) {
         const petListContainer = document.getElementById('pet-list-container');
         const petListSection = document.getElementById('pet-list-section');
-        const petPostDivider = document.getElementById('pet-post-divider');
         petListContainer.innerHTML = '';
 
         if (pets && pets.length > 0) {
             petListSection.style.display = 'block';
-            petPostDivider.style.display = 'block';
             pets.forEach(pet => {
                 const petImage = pet.profileImageUrl || '/images/default_pet_profile.png';
                 const genderText = pet.gender === 'MALE' ? '수컷' : '암컷';
+                const petIntro = pet.introduction ? pet.introduction : '반가워요 멍멍! 🐾';
+
                 const petCardHtml = `
-                    <div class="col">
-                        <div class="card h-100">
-                            <div class="row g-0">
-                                <div class="col-md-4">
-                                    <img src="${petImage}" class="img-fluid rounded-start w-100 pet-card-img" alt="${pet.name}">
-                                </div>
-                                <div class="col-md-8">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${pet.name}</h5>
-                                        <p class="card-text mb-1">${pet.breed}, ${pet.age}살, ${genderText}</p>
-                                        <p class="card-text"><small class="text-muted">${pet.introduction || ''}</small></p>
-                                    </div>
-                                </div>
+                    <div class="col-md-6">
+                        <div class="pet-card">
+                            <img src="${petImage}" class="pet-img" onerror="this.src='/images/default_pet_profile.png'">
+                            <div class="pet-info">
+                                <div class="pet-name">${pet.name}</div>
+                                <div class="pet-meta">${pet.breed} • ${pet.age}살 • ${genderText}</div>
+                                <div class="pet-intro">${petIntro}</div>
                             </div>
                         </div>
                     </div>
                 `;
-                petListContainer.innerHTML += petCardHtml;
+                petListContainer.insertAdjacentHTML('beforeend', petCardHtml);
             });
         }
     }
@@ -102,56 +343,85 @@
     function renderPostList(postPage) {
         const listContainer = document.getElementById('post-list');
         listContainer.innerHTML = '';
+
         if (postPage.content.length === 0) {
-            listContainer.innerHTML = '<p class="text-center">작성한 게시글이 없습니다.</p>';
+            listContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <h5 class="fw-bold text-muted mb-0">아직 작성한 게시글이 없습니다.</h5>
+                </div>
+            `;
             return;
         }
+
         postPage.content.forEach(post => {
             const postCard = document.createElement('a');
             postCard.href = `/post-detail?id=${post.id}`;
-            postCard.className = 'list-group-item list-group-item-action';
-            const formattedDate = new Date(post.createdAt).toLocaleString('ko-KR');
-            const thumbnailHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="img-fluid rounded post-thumbnail me-3" alt="썸네일">` : '';
+            postCard.className = 'post-card';
+
+            const formattedDate = new Date(post.createdAt).toLocaleDateString('ko-KR', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            const cleanContent = post.content.replace(/!\[.*?\]\(.*?\)/g, '');
+            const thumbnailHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="post-thumb" onerror="this.style.display='none'">` : '';
+
             postCard.innerHTML = `
-                <div class="d-flex align-items-center">
-                    ${thumbnailHtml}
-                    <div class="flex-grow-1">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">${post.title}</h5>
-                            <small class="text-muted">${formattedDate}</small>
-                        </div>
-                        <p class="mb-1 text-muted text-truncate">${post.content.replace(/!\[.*?\]\(.*?\)/g, '')}</p>
-                    </div>
+                <div class="post-info">
+                    <div class="post-title">${post.title}</div>
+                    <div class="post-excerpt">${cleanContent}</div>
+                    <div class="post-date">${formattedDate}</div>
                 </div>
+                ${thumbnailHtml}
             `;
             listContainer.appendChild(postCard);
         });
     }
 
     function renderPagination(pageData) {
-        const paginationContainer = document.getElementById('pagination');
-        paginationContainer.innerHTML = '';
+        const container = document.getElementById('pagination');
+        container.innerHTML = '';
+        if (pageData.totalPages <= 1) return;
+
         const currentPage = pageData.number;
         const totalPages = pageData.totalPages;
-        if (totalPages <= 1) return;
-        const createPageLink = (page, text, isDisabled = false, isActive = false) => {
+        const displayPageCount = 5;
+
+        let startPage = Math.floor(currentPage / displayPageCount) * displayPageCount;
+        let endPage = startPage + displayPageCount - 1;
+        if (endPage >= totalPages) endPage = totalPages - 1;
+
+        const createPageItem = (text, targetPage, isCurrent = false, isDisabled = false) => {
             const li = document.createElement('li');
-            li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
-            const link = document.createElement('a');
-            link.className = 'page-link';
-            link.href = '#';
-            link.textContent = text;
+            li.className = `page-item ${isCurrent ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
+            const a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = text;
             if (!isDisabled) {
-                link.onclick = (e) => { e.preventDefault(); fetchProfile(page); };
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    fetchProfile(targetPage);
+                    window.scrollTo(0, 0);
+                };
             }
-            li.appendChild(link);
-            return li;
+            li.appendChild(a);
+            container.appendChild(li);
         };
-        paginationContainer.appendChild(createPageLink(currentPage - 1, '이전', currentPage === 0));
-        for (let i = 0; i < totalPages; i++) {
-            paginationContainer.appendChild(createPageLink(i, i + 1, false, i === currentPage));
+
+        if (currentPage > 0) {
+            createPageItem('«', 0);
+            createPageItem('‹', currentPage - 1);
         }
-        paginationContainer.appendChild(createPageLink(currentPage + 1, '다음', currentPage === totalPages - 1));
+
+        for (let i = startPage; i <= endPage; i++) {
+            createPageItem(i + 1, i, i === currentPage);
+        }
+
+        if (currentPage < totalPages - 1) {
+            createPageItem('›', currentPage + 1);
+            createPageItem('»', totalPages - 1);
+        }
     }
 </script>
 </body>

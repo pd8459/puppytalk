@@ -37,12 +37,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 try {
                     setAuthentication(info.getSubject());
                 } catch (Exception e) {
-                    log.error("Authentication error: {}", e.getMessage());
-                    return;
+                    log.error("인증 처리 중 에러 발생: {}", e.getMessage());
                 }
             } else {
-                log.error("Invalid JWT token");
-                return;
+                log.warn("유효하지 않거나 만료된 JWT 토큰입니다. (익명 사용자로 처리됨)");
             }
         }
 

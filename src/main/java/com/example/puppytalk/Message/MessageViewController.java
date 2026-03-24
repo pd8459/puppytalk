@@ -11,7 +11,7 @@ public class MessageViewController {
     @GetMapping("/conversation")
     public String conversationPage(@RequestParam Long id, Model model) {
         model.addAttribute("conversationId", id);
-        return "message/conversation";
+        return "conversation";
     }
 
     @GetMapping("/inquiry")

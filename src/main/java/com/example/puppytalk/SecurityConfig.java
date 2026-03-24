@@ -62,6 +62,7 @@ public class SecurityConfig {
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers("/admin/**", "/admin/api/**").hasAuthority("ADMIN")
                 .requestMatchers("/shop/admin/**", "/shop/register").hasAuthority("ADMIN")
+                .requestMatchers("/messages", "/conversation", "/ws-stomp/**", "/error").permitAll()
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()

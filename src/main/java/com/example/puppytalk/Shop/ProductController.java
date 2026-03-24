@@ -1,16 +1,12 @@
 package com.example.puppytalk.Shop;
 
-import com.example.puppytalk.User.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,11 +23,15 @@ public class ProductController {
         return ResponseEntity.ok(productId);
     }
 
+    // ✨ 요놈 하나로 합쳤습니다! (기존 getAllProducts 삭제)
     @GetMapping("/products")
-    public ResponseEntity<Page<ProductResponseDto>> getAllProducts(
-            @PageableDefault(size = 12, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    public ResponseEntity<Page<ProductResponseDto>> getProducts(
+            @RequestParam(required = false) String keyword, // 검색어 받기
+            @PageableDefault(size = 12, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(productService.getAllProducts(pageable));
+        System.out.println("🚨 프론트에서 넘어온 검색어: " + keyword);
+        Page<ProductResponseDto> products = productService.getProducts(keyword, pageable);
+        return ResponseEntity.ok(products);
     }
 
     @GetMapping("/products/{productId}")
@@ -60,5 +60,4 @@ public class ProductController {
         productService.deleteProduct(productId);
         return ResponseEntity.ok("상품이 삭제(숨김) 처리되었습니다.");
     }
-
 }

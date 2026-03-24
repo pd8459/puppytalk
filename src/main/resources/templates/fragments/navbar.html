@@ -2,7 +2,73 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark" th:fragment="navbar">
+<nav class="navbar navbar-expand-lg navbar-light" th:fragment="navbar">
+    <style>
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-family: 'Pretendard', sans-serif;
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            color: #FF8A65 !important;
+            font-size: 1.4rem;
+        }
+
+        .nav-link {
+            color: #333333 !important;
+            font-weight: 600;
+            margin: 0 0.3rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #FF8A65 !important;
+        }
+
+        .admin-link {
+            color: #FFA000 !important;
+            font-weight: 800;
+        }
+
+        .btn-login-custom {
+            border: 2px solid #FF8A65;
+            color: #FF8A65;
+            background-color: white;
+            border-radius: 12px;
+            font-weight: 700;
+            padding: 0.5rem 1.2rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-login-custom:hover {
+            background-color: #FF8A65;
+            color: white;
+        }
+
+        .btn-logout-custom {
+            background-color: #F8F9FA;
+            color: #555555;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            padding: 0.6rem 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .btn-logout-custom:hover {
+            background-color: #EEEEEE;
+        }
+
+        #notification-badge {
+            font-size: 0.7em;
+            transform: translate(-30%, -30%) !important;
+        }
+    </style>
+
     <div class="container-fluid">
         <a class="navbar-brand" th:href="@{/main}">🐶 PuppyTalk</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -19,7 +85,6 @@
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/hospitals}">동물병원</a>
                 </li>
-
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/classifier}">AI 견종분석</a>
                 </li>
@@ -31,10 +96,10 @@
                 </li>
 
                 <li class="nav-item" id="admin-dashboard-nav-item" style="display: none;">
-                    <a class="nav-link text-warning fw-bold" th:href="@{/admin}">대시보드</a>
+                    <a class="nav-link admin-link" th:href="@{/admin}">대시보드</a>
                 </li>
                 <li class="nav-item" id="shop-register-nav-item" style="display: none;">
-                    <a class="nav-link text-warning" th:href="@{/shop/register}">상품등록</a>
+                    <a class="nav-link admin-link" th:href="@{/shop/register}">상품등록</a>
                 </li>
 
                 <li class="nav-item" id="cart-nav-item" style="display: none;">
@@ -53,7 +118,7 @@
                 <li class="nav-item" id="notifications-nav-item" style="display: none;">
                     <a class="nav-link position-relative" th:href="@{/notifications}">
                         알림
-                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 0.75em;">
+                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
                             <span id="notification-count"></span>
                         </span>
                     </a>
@@ -65,10 +130,10 @@
 
             <div class="d-flex align-items-center">
                 <div id="anonymous-nav" style="display: flex;">
-                    <a class="btn btn-outline-light" href="/login">로그인</a>
+                    <a class="btn-login-custom" href="/login">로그인</a>
                 </div>
                 <div id="authenticated-nav" style="display: none;">
-                    <button class="btn btn-light" id="logout-btn">로그아웃</button>
+                    <button class="btn-logout-custom" id="logout-btn">로그아웃</button>
                 </div>
             </div>
         </div>
@@ -81,15 +146,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             const anonymousNav = document.getElementById('anonymous-nav');
             const authenticatedNav = document.getElementById('authenticated-nav');
-
             const mypageNavItem = document.getElementById('mypage-nav-item');
             const profileNavItem = document.getElementById('profile-nav-item');
             const notificationsNavItem = document.getElementById('notifications-nav-item');
             const messagesNavItem = document.getElementById('messages-nav-item');
-
             const cartNavItem = document.getElementById('cart-nav-item');
             const orderHistoryNavItem = document.getElementById('order-history-nav-item');
-
             const adminDashboardNavItem = document.getElementById('admin-dashboard-nav-item');
             const shopRegisterNavItem = document.getElementById('shop-register-nav-item');
 
@@ -100,7 +162,6 @@
                 .then(user => {
                     anonymousNav.style.display = 'none';
                     authenticatedNav.style.display = 'block';
-
                     mypageNavItem.style.display = 'block';
                     profileNavItem.style.display = 'block';
                     notificationsNavItem.style.display = 'block';
@@ -119,7 +180,6 @@
                 .catch(error => {
                     anonymousNav.style.display = 'block';
                     authenticatedNav.style.display = 'none';
-
                     mypageNavItem.style.display = 'none';
                     profileNavItem.style.display = 'none';
                     notificationsNavItem.style.display = 'none';

@@ -1,7 +1,6 @@
 package com.example.puppytalk.Admin;
 
-import com.example.puppytalk.Shop.OrderHistoryDto;
-import com.example.puppytalk.Shop.OrderStatus;
+import com.example.puppytalk.Shop.*;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserStatus;
 import lombok.Data;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -133,5 +133,48 @@ public class AdminController {
     public ResponseEntity<String> approveCancel(@PathVariable Long orderId) {
         adminService.approveCancel(orderId);
         return ResponseEntity.ok("환불 처리가 완료되었습니다. (재고 복구됨)");
+    }
+
+    @GetMapping("/api/products")
+    @ResponseBody
+    public ResponseEntity<Page<Product>> getAllProductsForAdmin(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(adminService.getAllProducts(pageable));
+    }
+
+    @DeleteMapping("/api/products/{id}")
+    @ResponseBody
+    public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
+        adminService.deleteProduct(id);
+        return ResponseEntity.ok("상품이 삭제되었습니다.");
+    }
+
+    @GetMapping("/api/products/{id}")
+    @ResponseBody
+    public ResponseEntity<Product> getProductForAdmin(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getProduct(id));
+    }
+
+    @PutMapping("/api/products/{id}")
+    @ResponseBody
+    public ResponseEntity<String> updateProduct(@PathVariable Long id, @RequestBody ProductUpdateRequest request) {
+        adminService.updateProduct(id, request);
+        return ResponseEntity.ok("상품이 성공적으로 수정되었습니다.");
+    }
+
+    @Data
+    public static class ProductUpdateRequest {
+        private String name;
+        private int originalPrice;
+        private int discountRate;
+        private int salePrice;
+        private String description;
+        private String thumbnailUrl;
+        private int stockQuantity;
+        private String targetBreed;
+        private DogSize recommendedSize;
+        private LocalDateTime saleStartTime;
+        private LocalDateTime saleEndTime;
+        private ProductStatus status;
     }
 }

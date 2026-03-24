@@ -2,6 +2,7 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PuppyTalk - 상품 상세</title>
 
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -9,237 +10,396 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary-color: #FF8A65;
+            --primary-hover: #FF7043;
+            --bg-color: #FFF9F5;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --border-color: #EEEEEE;
+            --input-bg: #F8F9FA;
+        }
+
         body {
             font-family: 'Pretendard', sans-serif;
-            background-color: #fff;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 5rem;
         }
+
+        .detail-wrapper {
+            background-color: white;
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+            margin-top: 2rem;
+        }
+
         .product-img-wrapper {
-            border-radius: 12px;
+            border-radius: 20px;
             overflow: hidden;
-            background-color: #f8f9fa;
-            border: 1px solid #eee;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
+
         .product-img {
             width: 100%;
             aspect-ratio: 1 / 1;
             object-fit: cover;
         }
-        .seller-name { font-size: 0.9rem; color: #868e96; }
-        .product-title { font-size: 1.8rem; font-weight: 700; line-height: 1.3; color: #111; }
-        .original-price { font-size: 1.1rem; color: #adb5bd; text-decoration: line-through; }
-        .discount-rate { font-size: 2rem; color: #fa622f; font-weight: 800; margin-right: 8px; }
-        .final-price { font-size: 2rem; font-weight: 800; color: #111; }
-        .timedeal-banner {
-            background: rgba(250, 98, 47, 0.1);
-            border: 1px solid rgba(250, 98, 47, 0.2);
-            color: #fa622f;
-            border-radius: 8px;
-            padding: 12px 16px;
+
+        .seller-name {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            font-weight: 600;
         }
+
+        .product-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1.35;
+            color: var(--text-main);
+        }
+
+        .original-price {
+            font-size: 1.1rem;
+            color: #adb5bd;
+            text-decoration: line-through;
+        }
+
+        .discount-rate {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 800;
+            margin-right: 8px;
+        }
+
+        .final-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .timedeal-banner {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.2);
+        }
+
         .qty-container {
             display: inline-flex;
             align-items: center;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             overflow: hidden;
+            background-color: white;
         }
+
         .qty-btn {
-            width: 36px;
-            height: 36px;
-            background: #f8f9fa;
+            width: 40px;
+            height: 40px;
+            background: white;
             border: none;
-            font-size: 1.2rem;
-            color: #495057;
+            font-size: 1rem;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
-        .qty-btn:hover { background: #e9ecef; }
+
+        .qty-btn:hover {
+            background: var(--input-bg);
+            color: var(--primary-color);
+        }
+
         .qty-input {
             width: 50px;
-            height: 36px;
+            height: 40px;
             border: none;
-            border-left: 1px solid #ced4da;
-            border-right: 1px solid #ced4da;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
             text-align: center;
-            font-weight: 600;
-            color: #111;
+            font-weight: 700;
+            color: var(--text-main);
             outline: none;
         }
+
         .total-price-box {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
+            background-color: var(--input-bg);
+            border-radius: 16px;
+            padding: 20px 24px;
             margin-top: 20px;
+            border: 1px solid var(--border-color);
         }
-        .btn-buy { background-color: #111; color: white; border: none; font-weight: 700; }
-        .btn-buy:hover { background-color: #333; color: white; }
-        .btn-cart { background-color: #fff; color: #111; border: 1px solid #111; font-weight: 700; }
-        .btn-cart:hover { background-color: #f8f9fa; color: #111; }
-        .btn-chat { border: 1px solid #dee2e6; color: #495057; font-weight: 600; }
-        .nav-tabs .nav-link {
-            color: #868e96;
+
+        .btn-buy {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 700;
+            border-radius: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-buy:hover {
+            background-color: var(--primary-hover);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,138,101,0.3);
+        }
+
+        .btn-cart {
+            background-color: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            font-weight: 700;
+            border-radius: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-cart:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-chat {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
             font-weight: 600;
-            padding: 15px 0;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-chat:hover {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--text-sub);
+            font-weight: 700;
+            padding: 15px 5px;
             margin: 0 20px;
             border: none;
             border-bottom: 3px solid transparent;
+            transition: all 0.2s;
         }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color);
+        }
+
         .nav-tabs .nav-link.active {
-            color: #111;
-            border-bottom: 3px solid #111;
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
             background: transparent;
         }
-        .review-card {
-            border: none;
-            border-bottom: 1px solid #eee;
-            border-radius: 0;
-            padding: 20px 0;
+
+        .review-write-box {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
         }
+
+        .review-card {
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.2rem;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.01);
+        }
+
         .review-img {
             width: 120px;
             height: 120px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            border: 1px solid #eee;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s;
         }
+
+        .review-img:hover {
+            transform: scale(1.02);
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            background-color: white;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255,138,101,0.1);
+        }
+
+        .btn-submit-review {
+            background-color: var(--text-main);
+            color: white;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-submit-review:hover {
+            background-color: black;
+            color: white;
+        }
+
         .skeleton {
             background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
             background-size: 200% 100%;
             animation: 1.5s shine linear infinite;
         }
+
         @keyframes shine { to { background-position-x: -200%; } }
     </style>
 </head>
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container mt-4 mb-5" style="max-width: 1100px;">
+<div class="container" style="max-width: 1100px;">
+    <div class="detail-wrapper">
 
-    <div id="loading" class="row">
-        <div class="col-md-6"><div class="skeleton" style="width:100%; aspect-ratio:1/1; border-radius:12px;"></div></div>
-        <div class="col-md-6 mt-4 mt-md-0">
-            <div class="skeleton mb-2" style="width:20%; height:20px;"></div>
-            <div class="skeleton mb-4" style="width:80%; height:40px;"></div>
-            <div class="skeleton mb-4" style="width:50%; height:30px;"></div>
-            <div class="skeleton mb-5" style="width:100%; height:150px;"></div>
-            <div class="skeleton" style="width:100%; height:60px;"></div>
-        </div>
-    </div>
-
-    <div id="product-container" style="display: none;">
-        <div class="row g-5">
-            <div class="col-md-6">
-                <div class="product-img-wrapper position-sticky" style="top: 20px;">
-                    <img id="p-image" src="" class="product-img" alt="상품 이미지">
-                </div>
-            </div>
-
-            <div class="col-md-6 d-flex flex-column">
-                <div class="mb-2 seller-name"><i class="fa-solid fa-store me-1"></i> <span id="p-seller"></span></div>
-                <h1 id="p-name" class="product-title mb-3"></h1>
-
-                <div class="mb-3">
-                    <span id="p-breed" class="badge bg-light text-dark border border-secondary-subtle me-1" style="display: none;"></span>
-                    <span id="p-size" class="badge bg-light text-dark border border-secondary-subtle" style="display: none;"></span>
-                </div>
-
-                <div id="price-area" class="mb-4"></div>
-
-                <div id="time-deal-box" class="timedeal-banner d-flex align-items-center mb-4" style="display: none !important;">
-                    <i class="fa-solid fa-clock-rotate-left fs-4 me-3"></i>
-                    <div>
-                        <div class="fw-bold" style="font-size: 0.9rem;">타임 특가 마감 임박</div>
-                        <div class="fw-bold fs-5" id="countdown">00:00:00</div>
-                    </div>
-                </div>
-
-                <hr class="text-black-50 mb-4">
-
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <span class="fw-bold text-secondary">남은 재고</span>
-                    <span class="fw-bold"><span id="p-stock" class="text-primary"></span>개</span>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <span class="fw-bold text-secondary">구매 수량</span>
-                    <div class="qty-container">
-                        <button type="button" class="qty-btn" id="btn-minus"><i class="fa-solid fa-minus"></i></button>
-                        <input type="text" id="quantity" class="qty-input" value="1" readonly>
-                        <button type="button" class="qty-btn" id="btn-plus"><i class="fa-solid fa-plus"></i></button>
-                    </div>
-                </div>
-
-                <div class="total-price-box d-flex justify-content-between align-items-end mb-4">
-                    <span class="fw-bold">총 상품 금액</span>
-                    <div class="text-end">
-                        <span class="text-muted small me-1">총 수량 <span id="total-qty">1</span>개</span>
-                        <span id="total-price" class="final-price text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="row g-2 mt-auto">
-                    <div class="col-6">
-                        <button id="add-cart-btn" class="btn btn-cart w-100 py-3 fs-5">장바구니</button>
-                    </div>
-                    <div class="col-6">
-                        <button id="buy-now-btn" class="btn btn-buy w-100 py-3 fs-5">바로 구매</button>
-                    </div>
-                    <div class="col-12 mt-2">
-                        <button id="chat-btn" class="btn btn-chat w-100 py-2"><i class="fa-regular fa-comment-dots me-1"></i> 판매자 문의하기</button>
-                    </div>
-                </div>
+        <div id="loading" class="row">
+            <div class="col-md-6"><div class="skeleton" style="width:100%; aspect-ratio:1/1; border-radius:20px;"></div></div>
+            <div class="col-md-6 mt-4 mt-md-0">
+                <div class="skeleton mb-3" style="width:30%; height:20px; border-radius:8px;"></div>
+                <div class="skeleton mb-4" style="width:80%; height:45px; border-radius:12px;"></div>
+                <div class="skeleton mb-4" style="width:50%; height:35px; border-radius:8px;"></div>
+                <div class="skeleton mb-5" style="width:100%; height:150px; border-radius:16px;"></div>
+                <div class="skeleton" style="width:100%; height:60px; border-radius:14px;"></div>
             </div>
         </div>
 
-        <div class="mt-5 pt-5">
-            <ul class="nav nav-tabs justify-content-center mb-5" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fs-5" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc" type="button" role="tab">상세정보</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fs-5" id="review-tab" data-bs-toggle="tab" data-bs-target="#review" type="button" role="tab">상품후기</button>
-                </li>
-            </ul>
-
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade show active text-center" id="desc" role="tabpanel">
-                    <div id="p-desc" class="text-start d-inline-block text-break w-100" style="white-space: pre-line; min-height: 300px; font-size: 1.1rem; line-height: 1.8;"></div>
+        <div id="product-container" style="display: none;">
+            <div class="row g-5">
+                <div class="col-md-6">
+                    <div class="product-img-wrapper position-sticky" style="top: 20px;">
+                        <img id="p-image" src="" class="product-img" alt="상품 이미지">
+                    </div>
                 </div>
 
-                <div class="tab-pane fade" id="review" role="tabpanel">
-                    <div class="card bg-light border-0 rounded-4 p-4 mb-5">
-                        <h5 class="fw-bold mb-4">상품 후기 작성</h5>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <select class="form-select border-0 shadow-sm" id="ratingSelect" style="height: 50px;">
-                                    <option value="5">⭐⭐⭐⭐⭐ 아주 좋아요</option>
-                                    <option value="4">⭐⭐⭐⭐ 맘에 들어요</option>
-                                    <option value="3">⭐⭐⭐ 보통이에요</option>
-                                    <option value="2">⭐⭐ 그냥 그래요</option>
-                                    <option value="1">⭐ 별로예요</option>
-                                </select>
-                            </div>
-                            <div class="col-md-9">
-                                <input class="form-control border-0 shadow-sm" type="file" id="reviewImage" accept="image/*" style="height: 50px; line-height: 35px;">
-                            </div>
-                            <div class="col-12">
-                                <textarea class="form-control border-0 shadow-sm p-3" id="reviewContent" rows="3" placeholder="상품에 대한 솔직한 평가를 남겨주세요. (구매자만 작성 가능)"></textarea>
-                            </div>
-                            <div class="col-12 text-end mt-3">
-                                <button type="button" class="btn btn-dark px-4 py-2 fw-bold" onclick="submitReview()">등록하기</button>
-                            </div>
+                <div class="col-md-6 d-flex flex-column">
+                    <div class="mb-2 seller-name"><i class="fa-solid fa-store me-1"></i> <span id="p-seller"></span></div>
+                    <h1 id="p-name" class="product-title mb-3"></h1>
+
+                    <div class="mb-3">
+                        <span id="p-breed" class="badge bg-light text-dark border me-1 rounded-pill px-3 py-2" style="display: none;"></span>
+                        <span id="p-size" class="badge bg-light text-dark border rounded-pill px-3 py-2" style="display: none;"></span>
+                    </div>
+
+                    <div id="price-area" class="mb-4"></div>
+
+                    <div id="time-deal-box" class="timedeal-banner d-flex align-items-center mb-4" style="display: none !important;">
+                        <i class="fa-solid fa-clock-rotate-left fs-3 me-3"></i>
+                        <div>
+                            <div class="fw-bold" style="font-size: 0.85rem; opacity: 0.9;">타임 특가 마감 임박</div>
+                            <div class="fw-bold fs-4" id="countdown">00:00:00</div>
                         </div>
                     </div>
 
-                    <div id="reviewListContainer"></div>
+                    <hr class="text-black-50 mb-4" style="opacity: 0.1;">
 
-                    <div class="text-center mt-4 mb-5">
-                        <button id="btnLoadMore" class="btn btn-outline-secondary rounded-pill px-4" onclick="loadReviews()">더 많은 후기 보기 <i class="fa-solid fa-chevron-down ms-1"></i></button>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold text-secondary">남은 재고</span>
+                        <span class="fw-bold"><span id="p-stock" style="color: var(--primary-color);"></span>개</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold text-secondary">구매 수량</span>
+                        <div class="qty-container">
+                            <button type="button" class="qty-btn" id="btn-minus"><i class="fa-solid fa-minus"></i></button>
+                            <input type="text" id="quantity" class="qty-input" value="1" readonly>
+                            <button type="button" class="qty-btn" id="btn-plus"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="total-price-box d-flex justify-content-between align-items-end mb-4">
+                        <span class="fw-bold text-secondary">총 상품 금액</span>
+                        <div class="text-end">
+                            <span class="text-muted small me-2 fw-bold">총 수량 <span id="total-qty">1</span>개</span>
+                            <span id="total-price" class="final-price text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mt-auto">
+                        <div class="col-6">
+                            <button id="add-cart-btn" class="btn btn-cart w-100 py-3 fs-5">장바구니 담기</button>
+                        </div>
+                        <div class="col-6">
+                            <button id="buy-now-btn" class="btn btn-buy w-100 py-3 fs-5">바로 구매</button>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button id="chat-btn" class="btn btn-chat w-100 py-2"><i class="fa-regular fa-comment-dots me-1"></i> 판매자 문의하기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-4">
+                <ul class="nav nav-tabs justify-content-center" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fs-5" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc" type="button" role="tab">상세정보</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fs-5" id="review-tab" data-bs-toggle="tab" data-bs-target="#review" type="button" role="tab">상품후기</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active text-center p-4" id="desc" role="tabpanel">
+                        <div id="p-desc" class="text-start d-inline-block text-break w-100" style="white-space: pre-line; min-height: 300px; font-size: 1.05rem; line-height: 1.8; color: var(--text-main);"></div>
+                    </div>
+
+                    <div class="tab-pane fade p-2" id="review" role="tabpanel">
+                        <div class="review-write-box">
+                            <h5 class="fw-bold mb-4" style="color: var(--text-main);">상품 후기 작성</h5>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <select class="form-select" id="ratingSelect" style="height: 50px;">
+                                        <option value="5">⭐⭐⭐⭐⭐ 아주 좋아요</option>
+                                        <option value="4">⭐⭐⭐⭐ 맘에 들어요</option>
+                                        <option value="3">⭐⭐⭐ 보통이에요</option>
+                                        <option value="2">⭐⭐ 그냥 그래요</option>
+                                        <option value="1">⭐ 별로예요</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-9">
+                                    <input class="form-control" type="file" id="reviewImage" accept="image/*" style="height: 50px; line-height: 35px;">
+                                </div>
+                                <div class="col-12">
+                                    <textarea class="form-control p-3" id="reviewContent" rows="3" placeholder="상품에 대한 솔직한 평가를 남겨주세요. (구매자만 작성 가능)"></textarea>
+                                </div>
+                                <div class="col-12 text-end mt-3">
+                                    <button type="button" class="btn btn-submit-review px-4 py-2" onclick="submitReview()">등록하기</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="reviewListContainer"></div>
+
+                        <div class="text-center mt-4 mb-3">
+                            <button id="btnLoadMore" class="btn btn-chat rounded-pill px-4 py-2" onclick="loadReviews()">더 많은 후기 보기 <i class="fa-solid fa-chevron-down ms-1"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -427,7 +587,7 @@
                 if (currentPage === 0) listContainer.innerHTML = '';
 
                 if (content.length === 0 && currentPage === 0) {
-                    listContainer.innerHTML = '<div class="text-center text-muted py-5"><i class="fa-regular fa-comment-dots fa-3x mb-3"></i><h5>아직 작성된 후기가 없습니다.</h5><p>첫 번째 후기를 남겨주세요!</p></div>';
+                    listContainer.innerHTML = '<div class="text-center text-muted py-5"><i class="fa-regular fa-comment-dots fa-3x mb-3" style="opacity: 0.5;"></i><h5 class="fw-bold">아직 작성된 후기가 없습니다.</h5><p>첫 번째 후기를 남겨주세요!</p></div>';
                     document.getElementById('btnLoadMore').style.display = 'none';
                     return;
                 }
@@ -440,22 +600,22 @@
 
                     let stars = '';
                     for(let i=0; i<5; i++) {
-                        stars += i < review.rating ? '<i class="fa-solid fa-star text-warning"></i>' : '<i class="fa-regular fa-star text-warning"></i>';
+                        stars += i < review.rating ? '<i class="fa-solid fa-star" style="color: #FFB74D;"></i>' : '<i class="fa-regular fa-star" style="color: #FFB74D;"></i>';
                     }
 
                     const html = `
                         <div class="review-card">
                             <div class="d-flex justify-content-between mb-2">
                                 <div>
-                                    <span class="fw-bold me-2">${review.nickname}</span>
+                                    <span class="fw-bold me-2" style="color: var(--text-main);">${review.nickname}</span>
                                     <span class="text-muted small">${review.createdAt ? review.createdAt.substring(0, 10) : ''}</span>
                                 </div>
                                 <div class="fs-6">${stars}</div>
                             </div>
-                            <p class="mb-0 mt-2" style="font-size: 1.05rem; line-height: 1.6;">${review.content}</p>
+                            <p class="mb-0 mt-2" style="font-size: 1.05rem; line-height: 1.6; color: var(--text-main);">${review.content}</p>
                             ${imageHtml}
                             <div class="text-end mt-2">
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${review.id})"><i class="fa-solid fa-trash-can"></i> 삭제</button>
+                                <button class="btn btn-sm btn-outline-danger" style="border-radius: 8px;" onclick="deleteReview(${review.id})"><i class="fa-solid fa-trash-can"></i> 삭제</button>
                             </div>
                         </div>
                     `;
