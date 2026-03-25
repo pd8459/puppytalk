@@ -122,6 +122,19 @@
     <div class="form-wrapper">
         <form id="product-form">
             <div class="mb-4">
+                <label for="categoryId" class="custom-label">카테고리 설정</label>
+                <select class="custom-select" id="categoryId" required>
+                    <option value="">카테고리를 선택해주세요</option>
+                    <option value="251">사료/간식</option>
+                    <option value="252">외출/산책</option>
+                    <option value="253">목욕/미용</option>
+                    <option value="254">의류/패션</option>
+                    <option value="255">장난감</option>
+                    <option value="256">하우스</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
                 <label for="name" class="custom-label">상품명</label>
                 <input type="text" class="custom-input" id="name" placeholder="상품 이름을 입력하세요" required>
             </div>
@@ -192,6 +205,7 @@
     document.getElementById('product-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const categoryId = document.getElementById('categoryId').value;
         const name = document.getElementById('name').value;
         const originalPrice = document.getElementById('originalPrice').value;
         const stockQuantity = document.getElementById('stockQuantity').value;
@@ -210,6 +224,7 @@
         }
 
         const productData = {
+            categoryId: parseInt(categoryId),
             name: name,
             originalPrice: parseInt(originalPrice),
             discountRate: parseInt(discountRate),
@@ -236,12 +251,13 @@
 
             if (response.ok) {
                 alert('상품이 성공적으로 등록되었습니다.');
-                window.location.href = '/shop/list';
+                window.location.href = '/admin/products';
             } else {
                 if (response.status === 401 || response.status === 403) {
                     alert('로그인이 필요하거나 권한이 없습니다.');
                 } else {
-                    alert('상품 등록 실패: ' + await response.text());
+                    const errorMsg = await response.text();
+                    alert('상품 등록 실패: ' + errorMsg);
                 }
             }
         } catch (error) {

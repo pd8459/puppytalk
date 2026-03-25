@@ -19,19 +19,18 @@ public class ProductController {
 
     @PostMapping("/products")
     public ResponseEntity<Long> createProduct(@RequestBody ProductRequestDto requestDto) {
-        Long productId = productService.createProduct(requestDto);
-        return ResponseEntity.ok(productId);
+        return ResponseEntity.ok(productService.createProduct(requestDto));
     }
 
-    // ✨ 요놈 하나로 합쳤습니다! (기존 getAllProducts 삭제)
     @GetMapping("/products")
     public ResponseEntity<Page<ProductResponseDto>> getProducts(
-            @RequestParam(required = false) String keyword, // 검색어 받기
-            @PageableDefault(size = 12, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        System.out.println("🚨 프론트에서 넘어온 검색어: " + keyword);
-        Page<ProductResponseDto> products = productService.getProducts(keyword, pageable);
-        return ResponseEntity.ok(products);
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "category", required = false) String category,
+            @PageableDefault(size = 12, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        System.out.println("👉 [CCTV] 프론트에서 받은 검색어: [" + keyword + "] / 카테고리: [" + category + "]");
+
+        return ResponseEntity.ok(productService.getProducts(keyword, category, pageable));
     }
 
     @GetMapping("/products/{productId}")

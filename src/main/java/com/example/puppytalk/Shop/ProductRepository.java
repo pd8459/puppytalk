@@ -34,4 +34,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.name LIKE CONCAT('%', :keyword, '%')",
             countQuery = "SELECT count(p) FROM Product p WHERE p.name LIKE CONCAT('%', :keyword, '%')")
     Page<Product> searchByNameWithCategory(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category c WHERE c.name = :categoryName",
+            countQuery = "SELECT count(p) FROM Product p LEFT JOIN p.category c WHERE c.name = :categoryName")
+    Page<Product> searchByCategoryNameWithCategory(@Param("categoryName") String categoryName, Pageable pageable);
+
 }

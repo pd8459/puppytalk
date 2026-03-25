@@ -20,6 +20,7 @@ public class ProductRequestDto {
     private String thumbnailUrl;
     private String targetBreed;
     private DogSize recommendedSize;
+    private Long categoryId;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime saleStartTime;
@@ -27,7 +28,7 @@ public class ProductRequestDto {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime saleEndTime;
 
-    public Product toEntity() {
+    public Product toEntity(Category category) {
         return Product.builder()
                 .name(name)
                 .originalPrice(originalPrice)
@@ -36,6 +37,7 @@ public class ProductRequestDto {
                 .thumbnailUrl(thumbnailUrl)
                 .targetBreed(targetBreed)
                 .recommendedSize(recommendedSize)
+                .category(category)
                 .build();
     }
 }

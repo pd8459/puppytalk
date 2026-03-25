@@ -137,9 +137,9 @@ public class AdminController {
 
     @GetMapping("/api/products")
     @ResponseBody
-    public ResponseEntity<Page<Product>> getAllProductsForAdmin(
+    public ResponseEntity<Page<ProductResponseDto>> getAllProductsForAdmin(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(adminService.getAllProducts(pageable));
+        return ResponseEntity.ok(adminService.getAllProducts(pageable).map(ProductResponseDto::new));
     }
 
     @DeleteMapping("/api/products/{id}")
@@ -151,8 +151,8 @@ public class AdminController {
 
     @GetMapping("/api/products/{id}")
     @ResponseBody
-    public ResponseEntity<Product> getProductForAdmin(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getProduct(id));
+    public ResponseEntity<ProductResponseDto> getProductForAdmin(@PathVariable Long id) {
+        return ResponseEntity.ok(new ProductResponseDto(adminService.getProduct(id)));
     }
 
     @PutMapping("/api/products/{id}")

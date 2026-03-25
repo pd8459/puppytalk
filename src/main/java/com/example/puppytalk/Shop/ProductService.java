@@ -16,9 +16,13 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     @Transactional
     public Long createProduct(ProductRequestDto requestDto) {
+        Category category = categoryRepository.findById(requestDto.getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+
         int salePrice = requestDto.getOriginalPrice();
         if (requestDto.getDiscountRate() > 0) {
             salePrice = salePrice - (salePrice * requestDto.getDiscountRate() / 100);
@@ -37,6 +41,7 @@ public class ProductService {
                 .status(ProductStatus.ON_SALE)
                 .saleStartTime(requestDto.getSaleStartTime())
                 .saleEndTime(requestDto.getSaleEndTime())
+                .category(category)
                 .build();
 
         productRepository.save(product);
@@ -116,4 +121,24 @@ public class ProductService {
         }
         return productPage.map(ProductResponseDto::new);
     }
+
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> getProducts(String keyword, String category, Pageable pageable) {
+        Page<Product> productPage;
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // ✨ 검색어 최적화 쿼리 사용!
+            productPage = productRepository.searchByNameWithCategory(keyword, pageable);
+        } else if (category != null && !category.trim().isEmpty()) {
+            // ✨ 카테고리 최적화 쿼리 사용!
+            productPage = productRepository.searchByCategoryNameWithCategory(category, pageable);
+        } else {
+            // ✨ 전체 조회 최적화 쿼리 사용!
+            productPage = productRepository.findAllWithCategory(pageable);
+        }
+
+        return productPage.map(ProductResponseDto::new);
+    }
+
 }

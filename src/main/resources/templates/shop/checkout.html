@@ -256,7 +256,7 @@
                 <div class="section-title"><i class="fa-solid fa-box-open" style="color: var(--primary-color);"></i> 주문 상품</div>
 
                 <div class="order-list">
-                    <div th:each="item : ${cartItems}" class="order-item">
+                    <div th:if="${!isDirectOrder}" th:each="item : ${cartItems}" class="order-item">
                         <img th:src="${item.product.thumbnailUrl}" class="item-img" onerror="this.src='https://via.placeholder.com/70?text=Img'">
                         <div class="item-info">
                             <div th:text="${item.product.name}" class="item-name">상품명</div>
@@ -266,6 +266,20 @@
                             </div>
                         </div>
                         <div class="item-total" th:text="${#numbers.formatInteger(item.product.currentPrice * item.count, 0, 'COMMA')} + '원'">
+                            10,000원
+                        </div>
+                    </div>
+
+                    <div th:if="${isDirectOrder}" class="order-item">
+                        <img th:src="${singleProduct.thumbnailUrl}" class="item-img" onerror="this.src='https://via.placeholder.com/70?text=Img'">
+                        <div class="item-info">
+                            <div th:text="${singleProduct.name}" class="item-name">상품명</div>
+                            <div class="item-price-qty">
+                                <span th:text="${#numbers.formatInteger(singleProduct.price, 0, 'COMMA')}">10,000</span>원
+                                x <span th:text="${count}">1</span>개
+                            </div>
+                        </div>
+                        <div class="item-total" th:text="${#numbers.formatInteger(totalPrice, 0, 'COMMA')} + '원'">
                             10,000원
                         </div>
                     </div>
@@ -307,11 +321,17 @@
     const totalPrice = [[${totalPrice}]];
     const buyerEmail = [[${user.email}]];
     const buyerName = [[${user.nickname}]];
+    const isDirectOrder = [[${isDirectOrder}]];
 
-    let orderName = [[${cartItems[0].product.name}]];
-    const cartSize = [[${cartItems.size()}]];
-    if (cartSize > 1) {
-        orderName += ' 외 ' + (cartSize - 1) + '건';
+    let orderName = "";
+    if (isDirectOrder) {
+        orderName = [[${singleProduct?.name}]];
+    } else {
+        orderName = [[${cartItems != null && cartItems.size() > 0 ? cartItems[0].product.name : ''}]];
+        const cartSize = [[${cartItems != null ? cartItems.size() : 0}]];
+        if (cartSize > 1) {
+            orderName += ' 외 ' + (cartSize - 1) + '건';
+        }
     }
 
     function execDaumPostcode() {
@@ -339,19 +359,27 @@
         if (!confirm("카카오페이로 결제를 진행하시겠습니까?")) return;
 
         const token = localStorage.getItem('Authorization');
+        const apiUrl = isDirectOrder ? '/api/shop/order/direct' : '/api/shop/order';
+        const bodyData = isDirectOrder ? {
+            productId: [[${productId}]],
+            count: [[${count}]],
+            recipient: recipient,
+            phoneNumber: phone,
+            address: address + " " + detailAddress
+        } : {
+            recipient: recipient,
+            phoneNumber: phone,
+            address: address + " " + detailAddress
+        };
 
         try {
-            const orderResponse = await fetch('/api/shop/order', {
+            const orderResponse = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': token
                 },
-                body: JSON.stringify({
-                    recipient: recipient,
-                    phoneNumber: phone,
-                    address: address + " " + detailAddress
-                })
+                body: JSON.stringify(bodyData)
             });
 
             if (!orderResponse.ok) {
