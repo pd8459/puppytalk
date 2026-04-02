@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -112,5 +114,26 @@ public class Product extends BaseTimeEntity {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    @Builder.Default
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    private List<ProductDetailImage> detailImages = new ArrayList<>();
+
+    public void addDetailImage(String imageUrl, int sortOrder) {
+        ProductDetailImage detailImage = ProductDetailImage.builder()
+                .imageUrl(imageUrl)
+                .sortOrder(sortOrder)
+                .product(this)
+                .build();
+        this.detailImages.add(detailImage);
+    }
+
+    public void updateDetailImages(List<String> imageUrls) {
+        this.detailImages.clear();
+        for (int i = 0; i < imageUrls.size(); i++) {
+            addDetailImage(imageUrls.get(i), i + 1);
+        }
     }
 }

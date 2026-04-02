@@ -1,8 +1,8 @@
 package com.example.puppytalk.profile;
 
+import com.example.puppytalk.S3UploadService;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserRepository;
-import com.example.puppytalk.image.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,8 @@ public class ProfileService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ImageService imageService;
+    private final S3UploadService s3UploadService;
+
 
     @Transactional
     public void updateNickname(User user, String newNickname) {
@@ -48,7 +49,7 @@ public class ProfileService {
 
         String storedFileUrl = null;
         if (image != null && !image.isEmpty()) {
-            storedFileUrl = imageService.storeFile(image);
+            storedFileUrl = s3UploadService.uploadFile(image);
             persistentUser.updateProfileImage(storedFileUrl);
         }
 
@@ -56,7 +57,7 @@ public class ProfileService {
     }
 
     @Transactional
-    public void  deleteAccount(User user, AccountDeleteRequestDto requestDto) {
+    public void deleteAccount(User user, AccountDeleteRequestDto requestDto) {
         if (!passwordEncoder.matches(requestDto.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
@@ -64,5 +65,4 @@ public class ProfileService {
                 .orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         persistentUser.withdraw();
     }
-
 }

@@ -1,5 +1,6 @@
 package com.example.puppytalk.Shop;
 
+import com.example.puppytalk.S3UploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,7 +8,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -16,10 +20,50 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final S3UploadService s3UploadService;
 
     @PostMapping("/products")
-    public ResponseEntity<Long> createProduct(@RequestBody ProductRequestDto requestDto) {
-        return ResponseEntity.ok(productService.createProduct(requestDto));
+    public ResponseEntity<?> createProduct(
+            @RequestPart("dto") ProductRequestDto requestDto,
+            @RequestPart(value = "files", required = true) List<MultipartFile> files
+    ) {
+        try {
+            if (files == null || files.isEmpty()) {
+                return ResponseEntity.badRequest().body("최소 한 장 이상의 이미지를 업로드해주세요.");
+            }
+
+            List<String> allUrls = new ArrayList<>();
+            for (MultipartFile file : files) {
+                String url = s3UploadService.uploadFile(file);
+                allUrls.add(url);
+            }
+
+            requestDto.setThumbnailUrl(allUrls.get(0));
+
+            if (allUrls.size() > 1) {
+                requestDto.setDetailImageUrls(allUrls.subList(1, allUrls.size()));
+            } else {
+                requestDto.setDetailImageUrls(new ArrayList<>());
+            }
+
+            Long productId = productService.createProduct(requestDto);
+            return ResponseEntity.ok(productId);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("이미지 업로드 중 오류 발생");
+        }
+    }
+
+    @PostMapping("/products/editor/image-upload")
+    public ResponseEntity<String> uploadEditorImage(@RequestParam("image") MultipartFile image) {
+        try {
+            String imageUrl = s3UploadService.uploadFile(image);
+            return ResponseEntity.ok(imageUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("이미지 업로드에 실패했습니다.");
+        }
     }
 
     @GetMapping("/products")

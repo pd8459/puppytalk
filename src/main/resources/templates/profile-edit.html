@@ -65,6 +65,20 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
+        .default-profile-icon {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background-color: var(--input-bg);
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
         .btn-img-edit {
             position: absolute;
             bottom: 5px;
@@ -80,6 +94,7 @@
             border: 2px solid white;
             cursor: pointer;
             transition: all 0.2s;
+            z-index: 10;
         }
 
         .btn-img-edit:hover {
@@ -101,6 +116,7 @@
             background-color: var(--input-bg);
             transition: all 0.2s;
             outline: none;
+            width: 100%;
         }
 
         .custom-input:focus, .custom-select:focus, .custom-textarea:focus {
@@ -170,6 +186,20 @@
             margin-right: 1rem;
         }
 
+        .pet-thumb-default {
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
+            background-color: white;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
         .pet-info {
             flex-grow: 1;
         }
@@ -213,6 +243,20 @@
         .btn-delete-account:hover {
             opacity: 1;
         }
+
+        .modal-default-pet-icon {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background-color: var(--input-bg);
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -224,7 +268,10 @@
         <form id="profile-edit-form">
             <div class="text-center">
                 <div class="profile-img-area">
-                    <img id="profile-image-preview" th:src="@{/images/default_profile.png}" class="profile-img-preview" alt="프로필 사진">
+                    <div id="user-default-icon" class="default-profile-icon">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <img id="profile-image-preview" src="" class="profile-img-preview d-none" alt="프로필 사진">
                     <label for="profile-image-input" class="btn-img-edit">
                         <i class="fa-solid fa-camera"></i>
                     </label>
@@ -307,7 +354,11 @@
                     <input type="hidden" id="pet-id">
                     <div class="mb-4 text-center">
                         <div class="profile-img-area">
-                            <img id="pet-image-preview" th:src="@{/images/default_pet_profile.png}" class="profile-img-preview" style="width: 110px; height: 110px;">
+                            <div id="pet-default-icon" class="modal-default-pet-icon">
+                                <i class="fa-solid fa-dog"></i>
+                            </div>
+                            <img id="pet-image-preview" src="" class="profile-img-preview d-none" style="width: 110px; height: 110px;">
+
                             <label for="pet-image-input" class="btn-img-edit" style="width: 30px; height: 30px; bottom: 0; right: 0;">
                                 <i class="fa-solid fa-camera" style="font-size: 0.8rem;"></i>
                             </label>
@@ -321,13 +372,32 @@
                         </div>
                         <div class="col-md-6">
                             <label class="custom-label">품종</label>
-                            <input type="text" class="custom-input" id="pet-breed" required>
+                            <select class="custom-select" id="pet-breed" required>
+                                <option value="" selected disabled>품종 선택</option>
+                                <option value="말티즈">말티즈</option>
+                                <option value="푸들">푸들</option>
+                                <option value="포메라니안">포메라니안</option>
+                                <option value="비숑 프리제">비숑 프리제</option>
+                                <option value="시추">시추</option>
+                                <option value="요크셔 테리어">요크셔 테리어</option>
+                                <option value="치와와">치와와</option>
+                                <option value="골든 리트리버">골든 리트리버</option>
+                                <option value="래브라도 리트리버">래브라도 리트리버</option>
+                                <option value="웰시 코기">웰시 코기</option>
+                                <option value="진돗개">진돗개</option>
+                                <option value="믹스견">믹스견</option>
+                                <option value="기타">기타</option>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="custom-label">나이</label>
+                        <div class="col-md-4">
+                            <label class="custom-label">나이 (살)</label>
                             <input type="number" class="custom-input" id="pet-age">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="custom-label">몸무게 (kg)</label>
+                            <input type="number" class="custom-input" id="pet-weight" step="0.1" placeholder="예: 4.5">
+                        </div>
+                        <div class="col-md-4">
                             <label class="custom-label">성별</label>
                             <select class="custom-select" id="pet-gender">
                                 <option value="MALE">수컷</option>
@@ -351,14 +421,19 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    const token = localStorage.getItem('Authorization');
     const imageInput = document.getElementById('profile-image-input');
     const imagePreview = document.getElementById('profile-image-preview');
+    const userDefaultIcon = document.getElementById('user-default-icon');
 
     document.addEventListener('DOMContentLoaded', async () => {
         const petModal = new bootstrap.Modal(document.getElementById('petModal'));
 
         try {
-            const response = await fetch('/api/profile');
+            const response = await fetch('/api/profile', {
+                headers: { 'Authorization': token }
+            });
+
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
                     alert('로그인이 필요합니다.');
@@ -367,9 +442,16 @@
                 throw new Error('프로필 정보를 불러오는데 실패했습니다.');
             }
             const user = await response.json();
+
             if (user.profileImageUrl) {
                 imagePreview.src = user.profileImageUrl;
+                imagePreview.classList.remove('d-none');
+                userDefaultIcon.classList.add('d-none');
+            } else {
+                imagePreview.classList.add('d-none');
+                userDefaultIcon.classList.remove('d-none');
             }
+
             document.getElementById('username').value = user.username;
             document.getElementById('nickname').value = user.nickname;
         } catch (error) {
@@ -391,12 +473,17 @@
     async function uploadProfileImage(event) {
         const file = event.target.files[0];
         if (!file) return;
+
         imagePreview.src = URL.createObjectURL(file);
+        imagePreview.classList.remove('d-none');
+        userDefaultIcon.classList.add('d-none');
+
         const formData = new FormData();
         formData.append('image', file);
         try {
             const response = await fetch('/api/profile/image', {
                 method: 'POST',
+                headers: { 'Authorization': token },
                 body: formData
             });
             if (!response.ok) throw new Error('이미지 업로드 실패');
@@ -413,7 +500,10 @@
         try {
             const response = await fetch('/api/profile', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
                 body: JSON.stringify({ nickname: newNickname })
             });
             if (response.ok) {
@@ -442,13 +532,16 @@
         try {
             const response = await fetch('/api/profile/password', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
                 body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
             });
 
             if (response.ok) {
                 alert('비밀번호가 성공적으로 변경되었습니다. 보안을 위해 다시 로그인해주세요.');
-                await fetch('/api/logout', { method: 'POST' });
+                localStorage.removeItem('Authorization');
                 window.location.href = '/login';
             } else {
                 const errorText = await response.text();
@@ -470,12 +563,15 @@
         try {
             const response = await fetch('/api/profile', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
                 body: JSON.stringify({ password: password })
             });
             if (response.ok) {
                 alert('회원 탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.');
-                await fetch('/api/logout', { method: 'POST' });
+                localStorage.removeItem('Authorization');
                 window.location.href = '/main';
             } else {
                 const errorText = await response.text();
@@ -488,7 +584,9 @@
 
     async function loadUserPets(petModal) {
         try {
-            const response = await fetch('/api/pets');
+            const response = await fetch('/api/pets', {
+                headers: { 'Authorization': token }
+            });
             if (!response.ok) throw new Error('반려견 정보를 불러오는 데 실패했습니다.');
             const pets = await response.json();
             const container = document.getElementById('pet-list-container');
@@ -498,14 +596,22 @@
                 return;
             }
             pets.forEach(pet => {
-                const petImage = pet.profileImageUrl || '/images/default_pet_profile.png';
+                let imageHtml = '';
+                if (pet.profileImageUrl) {
+                    imageHtml = `<img src="${pet.profileImageUrl}" class="pet-thumb">`;
+                } else {
+                    imageHtml = `<div class="pet-thumb-default"><i class="fa-solid fa-dog"></i></div>`;
+                }
+
+                const weightDisplay = pet.weight ? `${pet.weight}kg` : '무게 미입력';
+
                 const card = document.createElement('div');
                 card.className = 'pet-item-card';
                 card.innerHTML = `
-                    <img src="${petImage}" class="pet-thumb">
+                    ${imageHtml}
                     <div class="pet-info">
                         <span class="pet-name">${pet.name}</span>
-                        <span class="pet-meta">${pet.breed} • ${pet.age}살</span>
+                        <span class="pet-meta">${pet.breed} • ${pet.age}살 • ${weightDisplay}</span>
                     </div>
                     <div class="d-flex gap-1">
                         <button class="btn btn-sm btn-outline-secondary border-0 btn-edit" style="font-size: 0.8rem; font-weight: 700;">수정</button>
@@ -525,20 +631,35 @@
         const modalLabel = document.getElementById('petModalLabel');
         document.getElementById('pet-form').reset();
         document.getElementById('pet-image-input').value = '';
-        const preview = document.getElementById('pet-image-preview');
+
+        const previewImg = document.getElementById('pet-image-preview');
+        const defaultIcon = document.getElementById('pet-default-icon');
+
         if (pet) {
             modalLabel.textContent = '반려견 정보 수정';
             document.getElementById('pet-id').value = pet.id;
             document.getElementById('pet-name').value = pet.name;
             document.getElementById('pet-breed').value = pet.breed;
             document.getElementById('pet-age').value = pet.age;
+            document.getElementById('pet-weight').value = pet.weight || '';
             document.getElementById('pet-gender').value = pet.gender;
             document.getElementById('pet-introduction').value = pet.introduction;
-            preview.src = pet.profileImageUrl || '/images/default_pet_profile.png';
+
+            if (pet.profileImageUrl) {
+                previewImg.src = pet.profileImageUrl;
+                previewImg.classList.remove('d-none');
+                defaultIcon.classList.add('d-none');
+            } else {
+                previewImg.src = '';
+                previewImg.classList.add('d-none');
+                defaultIcon.classList.remove('d-none');
+            }
         } else {
             modalLabel.textContent = '새 반려견 등록';
             document.getElementById('pet-id').value = '';
-            preview.src = '/images/default_pet_profile.png';
+            previewImg.src = '';
+            previewImg.classList.add('d-none');
+            defaultIcon.classList.remove('d-none');
         }
         petModal.show();
     }
@@ -546,7 +667,12 @@
     function previewPetImage(event) {
         const file = event.target.files[0];
         if (file) {
-            document.getElementById('pet-image-preview').src = URL.createObjectURL(file);
+            const previewImg = document.getElementById('pet-image-preview');
+            const defaultIcon = document.getElementById('pet-default-icon');
+
+            previewImg.src = URL.createObjectURL(file);
+            previewImg.classList.remove('d-none');
+            defaultIcon.classList.add('d-none');
         }
     }
 
@@ -556,31 +682,33 @@
             name: document.getElementById('pet-name').value,
             breed: document.getElementById('pet-breed').value,
             age: document.getElementById('pet-age').value,
+            weight: parseFloat(document.getElementById('pet-weight').value) || null,
             gender: document.getElementById('pet-gender').value,
             introduction: document.getElementById('pet-introduction').value,
         };
+
+        const formData = new FormData();
+        formData.append("dto", new Blob([JSON.stringify(petData)], { type: "application/json" }));
+
+        const imageFile = document.getElementById('pet-image-input').files[0];
+        if (imageFile) {
+            formData.append("image", imageFile);
+        }
+
         const isUpdate = !!petId;
         const url = isUpdate ? `/api/pets/${petId}` : '/api/pets';
         const method = isUpdate ? 'PUT' : 'POST';
+
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(petData),
+                headers: { 'Authorization': token },
+                body: formData
             });
-            if (!response.ok) throw new Error('정보 저장에 실패했습니다.');
 
-            const savedPet = await response.json();
-            const imageFile = document.getElementById('pet-image-input').files[0];
-
-            if (imageFile) {
-                const formData = new FormData();
-                formData.append('image', imageFile);
-                const imageResponse = await fetch(`/api/pets/${savedPet.id}/image`, {
-                    method: 'POST',
-                    body: formData,
-                });
-                if (!imageResponse.ok) throw new Error('이미지 업로드에 실패했습니다.');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error('정보 저장에 실패했습니다. ' + errorText);
             }
 
             petModal.hide();
@@ -595,7 +723,8 @@
         if (!confirm('정말로 이 프로필을 삭제하시겠습니까?')) return;
         try {
             const response = await fetch(`/api/pets/${petId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Authorization': token }
             });
             if (!response.ok) throw new Error('삭제에 실패했습니다.');
             await loadUserPets(petModal);

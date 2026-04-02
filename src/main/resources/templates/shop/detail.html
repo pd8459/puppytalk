@@ -42,6 +42,7 @@
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            position: relative;
         }
 
         .product-img {
@@ -271,6 +272,17 @@
         }
 
         @keyframes shine { to { background-position-x: -200%; } }
+
+        #p-desc img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .carousel-indicators [data-bs-target] {
+            background-color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
@@ -293,8 +305,19 @@
         <div id="product-container" style="display: none;">
             <div class="row g-5">
                 <div class="col-md-6">
-                    <div class="product-img-wrapper position-sticky" style="top: 20px;">
-                        <img id="p-image" src="" class="product-img" alt="상품 이미지">
+                    <div class="position-sticky" style="top: 20px;">
+                        <div id="productImageCarousel" class="carousel slide product-img-wrapper" data-bs-ride="carousel">
+                            <div class="carousel-indicators" id="carousel-indicators"></div>
+                            <div class="carousel-inner" id="carousel-inner"></div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: invert(1);"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true" style="filter: invert(1);"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -367,7 +390,7 @@
 
                 <div class="tab-content" id="myTabContent">
                     <div class="tab-pane fade show active text-center p-4" id="desc" role="tabpanel">
-                        <div id="p-desc" class="text-start d-inline-block text-break w-100" style="white-space: pre-line; min-height: 300px; font-size: 1.05rem; line-height: 1.8; color: var(--text-main);"></div>
+                        <div id="p-desc" class="text-start text-break w-100 mb-4" style="min-height: 50px; font-size: 1.05rem; line-height: 1.8; color: var(--text-main);"></div>
                     </div>
 
                     <div class="tab-pane fade p-2" id="review" role="tabpanel">
@@ -431,8 +454,45 @@
 
             document.getElementById('p-name').textContent = p.name;
             document.getElementById('p-stock').textContent = p.stockQuantity;
-            document.getElementById('p-desc').textContent = p.description;
+            document.getElementById('p-desc').innerHTML = p.description;
             document.getElementById('p-seller').textContent = p.sellerNickname || '퍼피톡 공식스토어';
+
+            let images = [p.thumbnailUrl || '/images/no-image.png'];
+            if (p.detailImageUrls && p.detailImageUrls.length > 0) {
+                images = images.concat(p.detailImageUrls);
+            }
+
+            const carouselInner = document.getElementById('carousel-inner');
+            const carouselIndicators = document.getElementById('carousel-indicators');
+            const prevBtn = document.querySelector('.carousel-control-prev');
+            const nextBtn = document.querySelector('.carousel-control-next');
+
+            carouselInner.innerHTML = '';
+            carouselIndicators.innerHTML = '';
+
+            if (images.length === 1) {
+                carouselIndicators.style.display = 'none';
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+            } else {
+                carouselIndicators.style.display = 'flex';
+                prevBtn.style.display = 'block';
+                nextBtn.style.display = 'block';
+            }
+
+            images.forEach((url, index) => {
+                const isActive = index === 0 ? 'active' : '';
+
+                carouselIndicators.innerHTML += `
+                    <button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="${index}" class="${isActive}" aria-label="Slide ${index + 1}"></button>
+                `;
+
+                carouselInner.innerHTML += `
+                    <div class="carousel-item ${isActive}">
+                        <img src="${url}" class="d-block w-100 product-img" alt="상품 이미지 ${index + 1}" onerror="this.src='https://via.placeholder.com/500?text=No+Image'">
+                    </div>
+                `;
+            });
 
             const priceArea = document.getElementById('price-area');
             const timerBox = document.getElementById('time-deal-box');
@@ -479,10 +539,6 @@
                 interval = setInterval(updateTimer, 1000);
                 updateTimer();
             }
-
-            const imgEl = document.getElementById('p-image');
-            imgEl.src = p.thumbnailUrl || '/images/no-image.png';
-            imgEl.onerror = () => imgEl.src = 'https://via.placeholder.com/500?text=No+Image';
 
             if (p.targetBreed) {
                 const breedBadge = document.getElementById('p-breed');

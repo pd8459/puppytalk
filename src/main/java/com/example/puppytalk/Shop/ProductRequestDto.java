@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -21,6 +22,7 @@ public class ProductRequestDto {
     private String targetBreed;
     private DogSize recommendedSize;
     private Long categoryId;
+    private List<String> detailImageUrls;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime saleStartTime;
@@ -29,15 +31,28 @@ public class ProductRequestDto {
     private LocalDateTime saleEndTime;
 
     public Product toEntity(Category category) {
-        return Product.builder()
+        Product product = Product.builder()
                 .name(name)
                 .originalPrice(originalPrice)
+                .discountRate(discountRate)
                 .stockQuantity(stockQuantity)
                 .description(description)
                 .thumbnailUrl(thumbnailUrl)
                 .targetBreed(targetBreed)
                 .recommendedSize(recommendedSize)
+                .saleStartTime(saleStartTime)
+                .saleEndTime(saleEndTime)
                 .category(category)
+                .status(ProductStatus.ON_SALE)
                 .build();
+
+        if (detailImageUrls != null && !detailImageUrls.isEmpty()) {
+            for (int i = 0; i < detailImageUrls.size(); i++) {
+                product.addDetailImage(detailImageUrls.get(i), i + 1);
+            }
+        }
+        product.applyDiscount(discountRate);
+
+        return product;
     }
 }

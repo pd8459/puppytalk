@@ -1,13 +1,10 @@
 package com.example.puppytalk.pet;
 
 import com.example.puppytalk.User.User;
-import com.example.puppytalk.image.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,7 +13,6 @@ import java.util.stream.Collectors;
 public class PetService {
 
     private final PetRepository petRepository;
-    private final ImageService imageService;
 
     @Transactional
     public PetResponseDto createPet(PetRequestDto requestDto, User user) {
@@ -27,6 +23,11 @@ public class PetService {
         pet.setAge(requestDto.getAge());
         pet.setGender(requestDto.getGender());
         pet.setIntroduction(requestDto.getIntroduction());
+        pet.setWeight(requestDto.getWeight());
+
+        if (requestDto.getProfileImageUrl() != null) {
+            pet.setProfileImageUrl(requestDto.getProfileImageUrl());
+        }
 
         Pet savedPet = petRepository.save(pet);
         return new PetResponseDto(savedPet);
@@ -48,6 +49,11 @@ public class PetService {
         pet.setAge(requestDto.getAge());
         pet.setGender(requestDto.getGender());
         pet.setIntroduction(requestDto.getIntroduction());
+        pet.setWeight(requestDto.getWeight());
+
+        if (requestDto.getProfileImageUrl() != null) {
+            pet.setProfileImageUrl(requestDto.getProfileImageUrl());
+        }
 
         return new PetResponseDto(pet);
     }
@@ -66,13 +72,5 @@ public class PetService {
             throw new IllegalArgumentException("해당 반려견에 대한 권한이 없습니다.");
         }
         return pet;
-    }
-
-    @Transactional
-    public String updatePetProfileImage(Long petId, MultipartFile image, User user) throws IOException {
-        Pet pet = findPetByIdAndUser(petId, user);
-        String imageUrl = imageService.storeFile(image);
-        pet.setProfileImageUrl(imageUrl);
-        return imageUrl;
     }
 }

@@ -11,6 +11,7 @@ public class PetResponseDto {
     private String gender;
     private String introduction;
     private String profileImageUrl;
+    private Double weight;
 
     public PetResponseDto(Pet pet) {
         this.id = pet.getId();
@@ -20,5 +21,6 @@ public class PetResponseDto {
         this.gender = pet.getGender();
         this.introduction = pet.getIntroduction();
         this.profileImageUrl = pet.getProfileImageUrl();
+        this.weight = pet.getWeight();
     }
 }

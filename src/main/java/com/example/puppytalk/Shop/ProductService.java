@@ -19,34 +19,23 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     @Transactional
-    public Long createProduct(ProductRequestDto requestDto) {
-        Category category = categoryRepository.findById(requestDto.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+    public Long createProduct(ProductRequestDto dto) {
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다. ID: " + dto.getCategoryId()));
 
-        int salePrice = requestDto.getOriginalPrice();
-        if (requestDto.getDiscountRate() > 0) {
-            salePrice = salePrice - (salePrice * requestDto.getDiscountRate() / 100);
+        Product product = dto.toEntity(category);
+
+        int salePrice = dto.getOriginalPrice();
+        if (dto.getDiscountRate() > 0) {
+            salePrice = salePrice - (salePrice * dto.getDiscountRate() / 100);
+        }
+        product.setSalePrice(salePrice);
+
+        if (dto.getDetailImageUrls() != null && !dto.getDetailImageUrls().isEmpty()) {
+            product.updateDetailImages(dto.getDetailImageUrls());
         }
 
-        Product product = Product.builder()
-                .name(requestDto.getName())
-                .originalPrice(requestDto.getOriginalPrice())
-                .discountRate(requestDto.getDiscountRate())
-                .salePrice(salePrice)
-                .description(requestDto.getDescription())
-                .thumbnailUrl(requestDto.getThumbnailUrl())
-                .stockQuantity(requestDto.getStockQuantity())
-                .targetBreed(requestDto.getTargetBreed())
-                .recommendedSize(requestDto.getRecommendedSize())
-                .status(ProductStatus.ON_SALE)
-                .saleStartTime(requestDto.getSaleStartTime())
-                .saleEndTime(requestDto.getSaleEndTime())
-                .category(category)
-                .build();
-
-        productRepository.save(product);
-
-        return product.getId();
+        return productRepository.save(product).getId();
     }
 
     @Transactional
@@ -72,6 +61,10 @@ public class ProductService {
                 requestDto.getSaleStartTime(),
                 requestDto.getSaleEndTime()
         );
+
+        if (requestDto.getDetailImageUrls() != null) {
+            product.updateDetailImages(requestDto.getDetailImageUrls());
+        }
 
         productRepository.save(product);
     }
@@ -128,17 +121,15 @@ public class ProductService {
         Page<Product> productPage;
 
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // ✨ 검색어 최적화 쿼리 사용!
             productPage = productRepository.searchByNameWithCategory(keyword, pageable);
         } else if (category != null && !category.trim().isEmpty()) {
-            // ✨ 카테고리 최적화 쿼리 사용!
             productPage = productRepository.searchByCategoryNameWithCategory(category, pageable);
         } else {
-            // ✨ 전체 조회 최적화 쿼리 사용!
             productPage = productRepository.findAllWithCategory(pageable);
         }
 
         return productPage.map(ProductResponseDto::new);
     }
+
 
 }

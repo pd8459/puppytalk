@@ -1,10 +1,11 @@
 package com.example.puppytalk.Shop;
 
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @NoArgsConstructor
@@ -16,11 +17,11 @@ public class ProductResponseDto {
     private int discountRate;
     private String description;
     private String thumbnailUrl;
+    private List<String> detailImageUrls;
     private ProductStatus status;
     private int stockQuantity;
     private String targetBreed;
     private DogSize recommendedSize;
-
     private LocalDateTime saleStartTime;
     private LocalDateTime saleEndTime;
     private boolean isTimeDealActive;
@@ -42,6 +43,12 @@ public class ProductResponseDto {
             this.categoryName = product.getCategory().getName();
         }
 
+        if (product.getDetailImages() != null && !product.getDetailImages().isEmpty()) {
+            this.detailImageUrls = product.getDetailImages().stream()
+                    .map(ProductDetailImage::getImageUrl)
+                    .collect(Collectors.toList());
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         if (product.getSaleStartTime() != null && product.getSaleEndTime() != null
@@ -57,6 +64,4 @@ public class ProductResponseDto {
             this.discountRate = 0;
         }
     }
-
-
 }
