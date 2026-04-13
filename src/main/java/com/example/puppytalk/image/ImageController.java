@@ -1,6 +1,5 @@
 package com.example.puppytalk.image;
 
-import com.example.puppytalk.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
