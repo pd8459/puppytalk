@@ -1,6 +1,5 @@
 package com.example.puppytalk.Post;
 
-import com.example.puppytalk.FileUploadService;
 import com.example.puppytalk.User.User;
 import com.example.puppytalk.User.UserRole;
 import com.example.puppytalk.image.Image;
@@ -21,7 +20,6 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
-    private final FileUploadService fileUploadService;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
 
