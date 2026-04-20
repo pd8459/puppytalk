@@ -60,7 +60,16 @@
 </div>
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 <script>
-    const token = localStorage.getItem('Authorization');
+    const getCookieToken = () => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; Authorization=`);
+        if (parts.length === 2) {
+            return decodeURIComponent(parts.pop().split(';').shift());
+        }
+        return null;
+    };
+    const token = getCookieToken();
+
     const editor = new toastui.Editor({
         el: document.querySelector('#editor'),
         height: '500px',
