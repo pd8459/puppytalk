@@ -17,23 +17,19 @@
             --border-color: #EEEEEE;
             --input-bg: #F8F9FA;
         }
-
         body {
             font-family: 'Pretendard', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             padding-bottom: 5rem;
         }
-
         .page-header {
             margin: 2rem 0;
         }
-
         .page-header h2 {
             font-weight: 800;
             color: var(--text-main);
         }
-
         .cart-item-card {
             background: white;
             border-radius: 20px;
@@ -47,11 +43,9 @@
             position: relative;
             transition: all 0.2s;
         }
-
         .cart-item-card:hover {
             border-color: var(--primary-color);
         }
-
         .cart-img {
             width: 100px;
             height: 100px;
@@ -60,11 +54,9 @@
             border: 1px solid var(--border-color);
             background-color: var(--input-bg);
         }
-
         .cart-item-info {
             flex-grow: 1;
         }
-
         .cart-item-title {
             font-size: 1.15rem;
             font-weight: 700;
@@ -74,20 +66,26 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.2rem;
             padding-right: 2rem;
         }
-
         .cart-item-title:hover {
             color: var(--primary-color);
         }
-
+        .cart-item-option {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            background-color: var(--input-bg);
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
         .cart-item-price {
             font-size: 1.05rem;
             color: var(--text-sub);
             font-weight: 600;
         }
-
         .cart-item-total {
             font-size: 1.3rem;
             font-weight: 800;
@@ -95,7 +93,6 @@
             text-align: right;
             min-width: 120px;
         }
-
         .btn-delete {
             position: absolute;
             top: 1rem;
@@ -112,12 +109,10 @@
             transition: all 0.2s;
             cursor: pointer;
         }
-
         .btn-delete:hover {
             background: #FFEbee;
             color: #D32F2F;
         }
-
         .qty-container {
             display: inline-flex;
             align-items: center;
@@ -126,7 +121,6 @@
             overflow: hidden;
             background-color: white;
         }
-
         .qty-btn {
             width: 36px;
             height: 36px;
@@ -140,12 +134,10 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
         .qty-btn:hover {
             background: var(--input-bg);
             color: var(--primary-color);
         }
-
         .qty-input {
             width: 45px;
             height: 36px;
@@ -157,7 +149,6 @@
             color: var(--text-main);
             outline: none;
         }
-
         .summary-card {
             background: white;
             border-radius: 20px;
@@ -167,14 +158,12 @@
             position: sticky;
             top: 20px;
         }
-
         .summary-title {
             font-weight: 800;
             font-size: 1.3rem;
             margin-bottom: 1.5rem;
             color: var(--text-main);
         }
-
         .summary-row {
             display: flex;
             justify-content: space-between;
@@ -182,7 +171,6 @@
             color: var(--text-sub);
             font-weight: 600;
         }
-
         .summary-total {
             display: flex;
             justify-content: space-between;
@@ -191,19 +179,16 @@
             padding-top: 1.5rem;
             border-top: 2px dashed var(--border-color);
         }
-
         .summary-total .label {
             font-size: 1.1rem;
             font-weight: 800;
             color: var(--text-main);
         }
-
         .summary-total .price {
             font-size: 1.8rem;
             font-weight: 800;
             color: var(--primary-color);
         }
-
         .btn-custom {
             background-color: var(--primary-color);
             color: white;
@@ -219,14 +204,12 @@
             text-align: center;
             text-decoration: none;
         }
-
         .btn-custom:hover {
             background-color: var(--primary-hover);
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(255,138,101,0.3);
         }
-
         .empty-state {
             background: white;
             border-radius: 20px;
@@ -235,7 +218,6 @@
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
-
         @media (max-width: 768px) {
             .cart-item-card {
                 flex-direction: column;
@@ -258,16 +240,13 @@
 </head>
 <body>
 <div th:replace="~{fragments/navbar :: navbar}"></div>
-
 <div class="container" style="max-width: 1100px;">
     <div class="page-header">
         <h2>🛒 장바구니</h2>
     </div>
-
     <div class="row g-4">
         <div class="col-lg-8">
             <div id="cart-list"></div>
-
             <div id="empty-message" class="empty-state d-none">
                 <i class="fa-solid fa-basket-shopping fa-4x mb-4" style="color: var(--border-color);"></i>
                 <h4 class="fw-bold mb-3" style="color: var(--text-main);">장바구니가 비어있습니다 텅! 🐶</h4>
@@ -275,35 +254,38 @@
                 <a href="/shop/list" class="btn btn-custom d-inline-block w-auto px-5 py-3">쇼핑하러 가기</a>
             </div>
         </div>
-
         <div class="col-lg-4">
             <div class="summary-card">
                 <h5 class="summary-title">주문 예상 금액</h5>
-
                 <div class="summary-row">
                     <span>총 상품금액</span>
                     <span id="total-price" class="text-dark">0원</span>
                 </div>
-
                 <div class="summary-row">
                     <span>배송비</span>
                     <span class="text-dark">0원</span>
                 </div>
-
                 <div class="summary-total">
                     <span class="label">총 결제금액</span>
                     <span class="price" id="final-price">0원</span>
                 </div>
-
                 <a href="/shop/checkout" class="btn-custom" id="checkout-btn">주문하기</a>
             </div>
         </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const token = localStorage.getItem('Authorization');
+    const getCookieToken = () => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; Authorization=`);
+        if (parts.length === 2) {
+            return decodeURIComponent(parts.pop().split(';').shift());
+        }
+        return null;
+    };
+
+    const token = getCookieToken();
 
     window.addEventListener('DOMContentLoaded', loadCart);
 
@@ -323,7 +305,6 @@
                 location.href = '/login';
                 return;
             }
-
             if (!response.ok) throw new Error('장바구니 로드 실패');
 
             const data = await response.json();
@@ -345,17 +326,17 @@
             let html = '';
             items.forEach(item => {
                 const itemTotal = item.totalPrice ? item.totalPrice : (item.price * item.count);
+                const detailLink = item.productId ? `/shop/detail?id=${item.productId}` : '#';
+
                 html += `
                     <div class="cart-item-card">
                         <button class="btn-delete" onclick="deleteItem(${item.cartItemId})"><i class="fa-solid fa-xmark"></i></button>
-
                         <img src="${item.thumbnailUrl || '/images/no-image.png'}" class="cart-img" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
-
                         <div class="cart-item-info">
-                            <a href="/shop/detail?id=${item.productId}" class="cart-item-title">${item.productName}</a>
+                            <a href="${detailLink}" class="cart-item-title">${item.productName}</a>
+                            <div class="cart-item-option">옵션: ${item.optionName}</div>
                             <div class="cart-item-price">${item.price.toLocaleString()}원</div>
                         </div>
-
                         <div class="cart-item-actions">
                             <div class="qty-container me-md-4">
                                 <button class="qty-btn" type="button" onclick="updateQty(${item.cartItemId}, ${item.count - 1})"><i class="fa-solid fa-minus"></i></button>
@@ -369,6 +350,7 @@
             });
             listContainer.innerHTML = html;
             updateSummary(data.totalOrderPrice);
+
         } catch (error) {
             console.error(error);
         }

@@ -1,6 +1,5 @@
 package com.example.puppytalk.Shop;
 
-import com.example.puppytalk.Shop.CartItem;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,18 +7,25 @@ import lombok.Setter;
 @Setter
 public class CartItemDto {
     private Long cartItemId;
+    private Long productId;
     private String productName;
+    private String optionName;
     private int price;
     private int count;
     private String thumbnailUrl;
     private int totalPrice;
 
     public CartItemDto(CartItem cartItem) {
+        ProductOption option = cartItem.getProductOption();
+        Product product = option.getProduct();
+
         this.cartItemId = cartItem.getId();
-        this.productName = cartItem.getProduct().getName();
-        this.price = cartItem.getProduct().getCurrentPrice();
+        this.productId = product.getId();
+        this.productName = product.getName();
+        this.optionName = option.getName();
+        this.price = product.getCurrentPrice() + option.getExtraPrice();
         this.count = cartItem.getCount();
-        this.thumbnailUrl = cartItem.getProduct().getThumbnailUrl();
+        this.thumbnailUrl = product.getThumbnailUrl();
         this.totalPrice = this.price * this.count;
     }
 }

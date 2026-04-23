@@ -16,8 +16,8 @@ public class OrderItem {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id")
-    private Product product;
+    @JoinColumn(name = "product_option_id")
+    private ProductOption productOption;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
@@ -26,28 +26,28 @@ public class OrderItem {
     private int orderPrice;
     private int count;
 
-    public static OrderItem createOrderItem(Product product, int orderPrice, int count) {
+    public static OrderItem createOrderItem(ProductOption productOption, int orderPrice, int count) {
         OrderItem orderItem = new OrderItem();
-        orderItem.setProduct(product);
-        orderItem.setOrderPrice(product.getSalePrice());
+        orderItem.setProductOption(productOption);
+        orderItem.setOrderPrice(orderPrice);
         orderItem.setCount(count);
-        product.removeStock(count);
+        productOption.removeStock(count);
         return orderItem;
     }
 
-    public static OrderItem createNormalOrderItem(Product product, int orderPrice, int count) {
+    public static OrderItem createNormalOrderItem(ProductOption productOption, int orderPrice, int count) {
         OrderItem orderItem = new OrderItem();
-        orderItem.setProduct(product);
-        orderItem.setOrderPrice(product.getSalePrice());
+        orderItem.setProductOption(productOption);
+        orderItem.setOrderPrice(orderPrice);
         orderItem.setCount(count);
         return orderItem;
     }
 
     public void cancel() {
-        getProduct().addStock(count);
+        this.productOption.addStock(count);
     }
 
     public int getTotalPrice() {
-        return getOrderPrice() * getCount();
+        return this.orderPrice * this.count;
     }
 }

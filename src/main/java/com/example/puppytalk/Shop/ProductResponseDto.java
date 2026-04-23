@@ -27,6 +27,23 @@ public class ProductResponseDto {
     private boolean isTimeDealActive;
     private String categoryName;
 
+    private List<OptionDto> options;
+
+    @Getter
+    public static class OptionDto {
+        private Long optionId;
+        private String name;
+        private int extraPrice;
+        private int stockQuantity;
+
+        public OptionDto(ProductOption option) {
+            this.optionId = option.getId();
+            this.name = option.getName();
+            this.extraPrice = option.getExtraPrice();
+            this.stockQuantity = option.getStockQuantity();
+        }
+    }
+
     public ProductResponseDto(Product product) {
         this.id = product.getId();
         this.name = product.getName();
@@ -34,13 +51,25 @@ public class ProductResponseDto {
         this.description = product.getDescription();
         this.thumbnailUrl = product.getThumbnailUrl();
         this.status = product.getStatus();
-        this.stockQuantity = product.getStockQuantity();
         this.targetBreed = product.getTargetBreed();
         this.recommendedSize = product.getRecommendedSize();
         this.saleStartTime = product.getSaleStartTime();
         this.saleEndTime = product.getSaleEndTime();
+
         if (product.getCategory() != null) {
             this.categoryName = product.getCategory().getName();
+        }
+
+        if (product.getOptions() != null) {
+            this.stockQuantity = product.getOptions().stream()
+                    .mapToInt(ProductOption::getStockQuantity)
+                    .sum();
+
+            this.options = product.getOptions().stream()
+                    .map(OptionDto::new)
+                    .collect(Collectors.toList());
+        } else {
+            this.stockQuantity = 0;
         }
 
         if (product.getDetailImages() != null && !product.getDetailImages().isEmpty()) {

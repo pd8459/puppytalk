@@ -15,7 +15,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT DISTINCT o FROM Order o " +
             "JOIN FETCH o.user " +
             "JOIN FETCH o.orderItems oi " +
-            "JOIN FETCH oi.product " +
+            "JOIN FETCH oi.productOption po " +
+            "JOIN FETCH po.product " +
             "WHERE o.user = :user ORDER BY o.orderDate DESC")
     List<Order> findAllByUserOrderByOrderDateDesc(@Param("user") User user);
 
@@ -35,13 +36,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "from Order o " +
             "join o.orderItems oi " +
             "where o.user.id = :userId " +
-            "and oi.product.id = :productId " +
+            "and oi.productOption.product.id = :productId " +
             "and o.status != 'CANCEL'")
     boolean existsByUserIdAndProductId(@Param("userId") Long userId, @Param("productId") Long productId);
 
     @Query("SELECT DISTINCT o FROM Order o " +
             "JOIN FETCH o.orderItems oi " +
-            "JOIN FETCH oi.product " +
+            "JOIN FETCH oi.productOption po " +
+            "JOIN FETCH po.product " +
             "WHERE o.id = :orderId")
     Optional<Order> findOrderWithItemsAndProductsById(@Param("orderId") Long orderId);
 }

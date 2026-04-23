@@ -16,6 +16,7 @@
         .custom-input, .custom-select { border: 1px solid var(--border-color); border-radius: 12px; padding: 0.8rem 1.2rem; background-color: var(--input-bg); width: 100%; }
         .section-card { background-color: var(--bg-color); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #FFE0B2; }
         .btn-submit { background-color: var(--primary-color); color: white; border-radius: 14px; font-weight: 800; padding: 1.2rem; border: none; width: 100%; margin-top: 2rem; }
+        .opt-name, .opt-price, .opt-stock { border: 1px solid var(--border-color); border-radius: 12px; padding: 0.8rem 1rem; background-color: var(--input-bg); width: 100%; }
     </style>
 </head>
 <body>
@@ -41,10 +42,36 @@
                 <label class="custom-label">상품명</label>
                 <input type="text" class="custom-input" id="name" required>
             </div>
-            <div class="row mb-4">
-                <div class="col-6"><label class="custom-label">정가</label><input type="number" class="custom-input" id="originalPrice" required></div>
-                <div class="col-6"><label class="custom-label">재고</label><input type="number" class="custom-input" id="stockQuantity" required></div>
+            <div class="mb-4">
+                <label class="custom-label">정가</label>
+                <input type="number" class="custom-input" id="originalPrice" required>
             </div>
+
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="custom-label mb-0">상품 옵션 <span class="text-danger">*</span></label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addOptionRow()">
+                        <i class="fa-solid fa-plus"></i> 옵션 추가
+                    </button>
+                </div>
+                <div id="options-container">
+                    <div class="row g-2 mb-2 option-row">
+                        <div class="col-5">
+                            <input type="text" class="form-control opt-name" placeholder="옵션명 (예: 기본, S사이즈)" required>
+                        </div>
+                        <div class="col-3">
+                            <input type="number" class="form-control opt-price" placeholder="추가 금액" value="0" required>
+                        </div>
+                        <div class="col-3">
+                            <input type="number" class="form-control opt-stock" placeholder="재고 수량" value="10" required>
+                        </div>
+                        <div class="col-1">
+                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeOptionRow(this)"><i class="fa-solid fa-minus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="section-card">
                 <label class="custom-label">📸 상품 이미지 (여러 장 선택 가능)</label>
                 <input type="file" class="custom-input" id="productFiles" accept="image/*" multiple required>
@@ -88,14 +115,53 @@
         }
     });
 
+    function addOptionRow() {
+        const container = document.getElementById('options-container');
+        const row = document.createElement('div');
+        row.className = 'row g-2 mb-2 option-row';
+        row.innerHTML = `
+            <div class="col-5">
+                <input type="text" class="form-control opt-name" placeholder="옵션명" required>
+            </div>
+            <div class="col-3">
+                <input type="number" class="form-control opt-price" placeholder="추가 금액" value="0" required>
+            </div>
+            <div class="col-3">
+                <input type="number" class="form-control opt-stock" placeholder="재고 수량" value="10" required>
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn btn-outline-danger w-100" onclick="removeOptionRow(this)"><i class="fa-solid fa-minus"></i></button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeOptionRow(btn) {
+        const rows = document.querySelectorAll('.option-row');
+        if (rows.length > 1) {
+            btn.closest('.option-row').remove();
+        } else {
+            alert("최소 1개의 옵션은 등록해야 합니다.");
+        }
+    }
+
     document.getElementById('product-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const optionRows = document.querySelectorAll('.option-row');
+        const optionsArray = Array.from(optionRows).map(row => ({
+            name: row.querySelector('.opt-name').value,
+            extraPrice: parseInt(row.querySelector('.opt-price').value) || 0,
+            stockQuantity: parseInt(row.querySelector('.opt-stock').value) || 0
+        }));
+
         const dto = {
             categoryId: parseInt(document.getElementById('categoryId').value),
             name: document.getElementById('name').value,
             originalPrice: parseInt(document.getElementById('originalPrice').value),
-            stockQuantity: parseInt(document.getElementById('stockQuantity').value),
-            description: editor.getHTML()
+            discountRate: 0,
+            description: editor.getHTML(),
+            options: optionsArray
         };
 
         const formData = new FormData();
@@ -113,7 +179,6 @@
         });
 
         if (response.ok) {
-            alert('등록 성공!');
             location.href = '/admin/products';
         } else {
             alert('실패: ' + await response.text());

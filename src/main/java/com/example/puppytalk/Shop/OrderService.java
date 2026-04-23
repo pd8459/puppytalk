@@ -21,6 +21,7 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
     private final ProductRepository productRepository;
+    private final ProductOptionRepository productOptionRepository;
 
     public Long orderFromCart(User user) {
         Cart cart = cartRepository.findByUserId(user.getId())
@@ -33,35 +34,33 @@ public class OrderService {
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cartItems) {
-            Long productId = cartItem.getProduct().getId();
+            Long optionId = cartItem.getProductOption().getId();
             int count = cartItem.getCount();
 
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+            ProductOption option = productOptionRepository.findById(optionId)
+                    .orElseThrow(() -> new IllegalArgumentException("옵션을 찾을 수 없습니다."));
 
+            Product product = option.getProduct();
             boolean isTimeDeal = product.getSaleStartTime() != null;
+            int finalPrice = product.getCurrentPrice() + option.getExtraPrice();
 
             if (isTimeDeal) {
-                Product lockedProduct = productRepository.findByIdWithLock(productId)
-                        .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+                ProductOption lockedOption = productOptionRepository.findByIdWithLock(optionId)
+                        .orElseThrow(() -> new IllegalArgumentException("옵션을 찾을 수 없습니다."));
 
-                if (lockedProduct.getStockQuantity() < count) {
+                if (lockedOption.getStockQuantity() < count) {
                     throw new IllegalArgumentException("재고가 부족합니다.");
                 }
 
-                orderItems.add(OrderItem.createOrderItem(lockedProduct, lockedProduct.getCurrentPrice(), count));
+                orderItems.add(OrderItem.createOrderItem(lockedOption, finalPrice, count));
             } else {
-                int updatedCount = productRepository.decreaseStock(productId, count);
+                int updatedCount = productOptionRepository.decreaseStock(optionId, count);
                 if (updatedCount == 0) {
                     throw new IllegalArgumentException("재고가 부족합니다.");
                 }
 
-                Product updatedProduct = productRepository.findById(productId).get();
-                if (updatedProduct.getStockQuantity() == 0) {
-                    updatedProduct.changeStatus(ProductStatus.SOLD_OUT);
-                }
-
-                orderItems.add(OrderItem.createNormalOrderItem(updatedProduct, updatedProduct.getCurrentPrice(), count));
+                ProductOption updatedOption = productOptionRepository.findById(optionId).get();
+                orderItems.add(OrderItem.createNormalOrderItem(updatedOption, finalPrice, count));
             }
         }
 
@@ -156,35 +155,39 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCEL_REQUESTED);
     }
 
-    public Long directOrder(User user, Long productId, int count) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-
-        boolean isTimeDeal = product.getSaleStartTime() != null;
-
+    @Transactional
+    public Long directOrder(User user, DirectOrderDto request) {
         List<OrderItem> orderItems = new ArrayList<>();
 
-        if (isTimeDeal) {
-            Product lockedProduct = productRepository.findByIdWithLock(productId)
-                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+        for (DirectOrderDto.OrderItemDto itemDto : request.getOrderItems()) {
+            Long optionId = itemDto.getOptionId();
+            int count = itemDto.getCount();
 
-            if (lockedProduct.getStockQuantity() < count) {
-                throw new IllegalArgumentException("재고가 부족합니다.");
+            ProductOption option = productOptionRepository.findById(optionId)
+                    .orElseThrow(() -> new IllegalArgumentException("옵션을 찾을 수 없습니다."));
+
+            Product product = option.getProduct();
+            boolean isTimeDeal = product.getSaleStartTime() != null;
+            int finalPrice = product.getCurrentPrice() + option.getExtraPrice();
+
+            if (isTimeDeal) {
+                ProductOption lockedOption = productOptionRepository.findByIdWithLock(optionId)
+                        .orElseThrow(() -> new IllegalArgumentException("옵션을 찾을 수 없습니다."));
+
+                if (lockedOption.getStockQuantity() < count) {
+                    throw new IllegalArgumentException("재고가 부족합니다.");
+                }
+
+                orderItems.add(OrderItem.createOrderItem(lockedOption, finalPrice, count));
+            } else {
+                int updatedCount = productOptionRepository.decreaseStock(optionId, count);
+                if (updatedCount == 0) {
+                    throw new IllegalArgumentException("재고가 부족합니다.");
+                }
+
+                ProductOption updatedOption = productOptionRepository.findById(optionId).get();
+                orderItems.add(OrderItem.createNormalOrderItem(updatedOption, finalPrice, count));
             }
-
-            orderItems.add(OrderItem.createOrderItem(lockedProduct, lockedProduct.getCurrentPrice(), count));
-        } else {
-            int updatedCount = productRepository.decreaseStock(productId, count);
-            if (updatedCount == 0) {
-                throw new IllegalArgumentException("재고가 부족합니다.");
-            }
-
-            Product updatedProduct = productRepository.findById(productId).get();
-            if (updatedProduct.getStockQuantity() == 0) {
-                updatedProduct.changeStatus(ProductStatus.SOLD_OUT);
-            }
-
-            orderItems.add(OrderItem.createNormalOrderItem(updatedProduct, updatedProduct.getCurrentPrice(), count));
         }
 
         Order order = Order.createOrder(user, orderItems);

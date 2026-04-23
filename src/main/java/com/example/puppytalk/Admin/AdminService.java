@@ -88,10 +88,9 @@ public class AdminService {
         order.setStatus(OrderStatus.CANCEL);
 
         for (OrderItem item : order.getOrderItems()) {
-            Product product = item.getProduct();
-            product.setStockQuantity(product.getStockQuantity() + item.getCount());
+            ProductOption option = item.getProductOption();
+            option.addStock(item.getCount());
         }
-
     }
 
     @Transactional(readOnly = true)
@@ -124,7 +123,6 @@ public class AdminService {
                 request.getSalePrice(),
                 request.getDescription(),
                 request.getThumbnailUrl(),
-                request.getStockQuantity(),
                 request.getTargetBreed(),
                 request.getRecommendedSize(),
                 request.getSaleStartTime(),
@@ -135,5 +133,4 @@ public class AdminService {
             product.changeStatus(request.getStatus());
         }
     }
-
 }

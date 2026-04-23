@@ -18,7 +18,6 @@ public class OrderHistoryDto {
     private String buyerName;
     private String orderName;
 
-
     public OrderHistoryDto(Order order) {
         this.orderId = order.getId();
         this.orderDate = order.getOrderDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
@@ -35,7 +34,7 @@ public class OrderHistoryDto {
         }
 
         if (!order.getOrderItems().isEmpty()) {
-            String firstName = order.getOrderItems().get(0).getProduct().getName();
+            String firstName = order.getOrderItems().get(0).getProductOption().getProduct().getName();
             if (order.getOrderItems().size() > 1) {
                 this.orderName = firstName + " 외 " + (order.getOrderItems().size() - 1) + "건";
             } else {
@@ -52,10 +51,13 @@ public class OrderHistoryDto {
         private String thumbnailUrl;
 
         public OrderItemDto(OrderItem orderItem) {
-            this.productName = orderItem.getProduct().getName();
+            ProductOption option = orderItem.getProductOption();
+            Product product = option.getProduct();
+
+            this.productName = product.getName() + " [" + option.getName() + "]";
             this.count = orderItem.getCount();
             this.orderPrice = orderItem.getOrderPrice();
-            this.thumbnailUrl = orderItem.getProduct().getThumbnailUrl();
+            this.thumbnailUrl = product.getThumbnailUrl();
         }
     }
 }

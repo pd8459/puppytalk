@@ -6,6 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CartAddRequestDto {
-    private Long productId;
+    private Long optionId;
     private int count;
 }

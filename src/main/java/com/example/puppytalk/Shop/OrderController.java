@@ -25,7 +25,13 @@ public class OrderController {
         Map<String, Object> response = new HashMap<>();
         response.put("orderId", orderId);
         response.put("totalPrice", order.getTotalPrice());
-        response.put("orderName", order.getOrderItems().get(0).getProduct().getName() + " 외 " + (order.getOrderItems().size() - 1) + "건");
+
+        String orderName = order.getOrderItems().get(0).getProductOption().getProduct().getName();
+        if (order.getOrderItems().size() > 1) {
+            orderName += " 외 " + (order.getOrderItems().size() - 1) + "건";
+        }
+        response.put("orderName", orderName);
+
         response.put("buyerName", userDetails.getUser().getNickname());
         return ResponseEntity.ok(response);
     }
@@ -36,7 +42,6 @@ public class OrderController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         orderService.cancelOrder(orderId, userDetails.getUsername());
-
         return ResponseEntity.ok("주문이 취소되었습니다.");
     }
 
@@ -59,9 +64,20 @@ public class OrderController {
             @RequestBody DirectOrderDto request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        Long orderId = orderService.directOrder(userDetails.getUser(), request.getProductId(), request.getCount());
+        Long orderId = orderService.directOrder(userDetails.getUser(), request);
+        Order order = orderService.getOrderEntity(orderId);
+
         Map<String, Object> response = new HashMap<>();
         response.put("orderId", orderId);
+        response.put("totalPrice", order.getTotalPrice());
+
+        String orderName = order.getOrderItems().get(0).getProductOption().getProduct().getName();
+        if (order.getOrderItems().size() > 1) {
+            orderName += " 외 " + (order.getOrderItems().size() - 1) + "건";
+        }
+
+        response.put("orderName", orderName);
+        response.put("buyerName", userDetails.getUser().getNickname());
         response.put("message", "주문이 완료되었습니다.");
 
         return ResponseEntity.ok(response);

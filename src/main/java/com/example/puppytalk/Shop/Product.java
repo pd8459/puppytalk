@@ -1,9 +1,7 @@
 package com.example.puppytalk.Shop;
 
 import jakarta.persistence.*;
-
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,13 +23,8 @@ public class Product extends BaseTimeEntity {
     private String name;
 
     private int originalPrice;
-
     private int salePrice;
-
     private int discountRate;
-
-    @Column(nullable = false)
-    private int stockQuantity;
 
     @Lob
     @Column(columnDefinition = "TEXT")
@@ -52,34 +45,28 @@ public class Product extends BaseTimeEntity {
     private LocalDateTime saleStartTime;
     private LocalDateTime saleEndTime;
 
-    public void removeStock(int quantity) {
-        int restStock = this.stockQuantity - quantity;
-        if (restStock < 0) {
-            throw new IllegalStateException("재고가 부족합니다.");
-        }
-        this.stockQuantity = restStock;
-        if (this.stockQuantity == 0) {
-            this.status = ProductStatus.SOLD_OUT;
-        }
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
-    public void addStock(int quantity) {
-        this.stockQuantity += quantity;
-        if (this.status == ProductStatus.SOLD_OUT && this.stockQuantity > 0) {
-            this.status = ProductStatus.ON_SALE;
-        }
-    }
+    @Builder.Default
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductOption> options = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    private List<ProductDetailImage> detailImages = new ArrayList<>();
 
     public void updateProduct(String name, int originalPrice, int discountRate, int salePrice,
-                              String description, String thumbnailUrl, int stockQuantity,
-                              String targetBreed, DogSize recommendedSize,LocalDateTime saleStartTime, LocalDateTime saleEndTime) {
+                              String description, String thumbnailUrl,
+                              String targetBreed, DogSize recommendedSize, LocalDateTime saleStartTime, LocalDateTime saleEndTime) {
         this.name = name;
         this.originalPrice = originalPrice;
         this.discountRate = discountRate;
         this.salePrice = salePrice;
         this.description = description;
         if(thumbnailUrl != null) this.thumbnailUrl = thumbnailUrl;
-        this.stockQuantity = stockQuantity;
         this.targetBreed = targetBreed;
         this.recommendedSize = recommendedSize;
         this.saleStartTime = saleStartTime;
@@ -108,18 +95,26 @@ public class Product extends BaseTimeEntity {
         return this.originalPrice;
     }
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private Category category;
-
     public void setCategory(Category category) {
         this.category = category;
     }
 
-    @Builder.Default
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
-    private List<ProductDetailImage> detailImages = new ArrayList<>();
+    public void addOption(ProductOption option) {
+        this.options.add(option);
+        option.setProduct(this);
+    }
+
+    public void checkAndAutoUpdateStatus() {
+        int totalStock = this.options.stream()
+                .mapToInt(ProductOption::getStockQuantity)
+                .sum();
+
+        if (totalStock <= 0) {
+            this.status = ProductStatus.SOLD_OUT;
+        } else if (this.status == ProductStatus.SOLD_OUT && totalStock > 0) {
+            this.status = ProductStatus.ON_SALE;
+        }
+    }
 
     public void addDetailImage(String imageUrl, int sortOrder) {
         ProductDetailImage detailImage = ProductDetailImage.builder()

@@ -1,6 +1,5 @@
 package com.example.puppytalk.Shop;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,7 +54,6 @@ public class ProductService {
                 salePrice,
                 requestDto.getDescription(),
                 requestDto.getThumbnailUrl(),
-                requestDto.getStockQuantity(),
                 requestDto.getTargetBreed(),
                 requestDto.getRecommendedSize(),
                 requestDto.getSaleStartTime(),
@@ -115,7 +113,6 @@ public class ProductService {
         return productPage.map(ProductResponseDto::new);
     }
 
-
     @Transactional(readOnly = true)
     public Page<ProductResponseDto> getProducts(String keyword, String category, Pageable pageable) {
         Page<Product> productPage;
@@ -130,6 +127,4 @@ public class ProductService {
 
         return productPage.map(ProductResponseDto::new);
     }
-
-
 }

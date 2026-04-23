@@ -5,7 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,10 +22,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findByIdWithLock(@Param("id") Long id);
 
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE Product p SET p.stockQuantity = p.stockQuantity - :quantity WHERE p.id = :id AND p.stockQuantity >= :quantity")
-    int decreaseStock(@Param("id") Long id, @Param("quantity") int quantity);
-
     @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category",
             countQuery = "SELECT count(p) FROM Product p")
     Page<Product> findAllWithCategory(Pageable pageable);
@@ -38,5 +33,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category c WHERE c.name = :categoryName",
             countQuery = "SELECT count(p) FROM Product p LEFT JOIN p.category c WHERE c.name = :categoryName")
     Page<Product> searchByCategoryNameWithCategory(@Param("categoryName") String categoryName, Pageable pageable);
-
 }

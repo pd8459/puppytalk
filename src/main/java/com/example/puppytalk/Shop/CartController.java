@@ -18,7 +18,7 @@ public class CartController {
             @RequestBody CartAddRequestDto requestDto,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        cartService.addCart(userDetails.getUser(), requestDto.getProductId(), requestDto.getCount());
+        cartService.addCart(userDetails.getUser(), requestDto.getOptionId(), requestDto.getCount());
         return ResponseEntity.ok("장바구니에 담았습니다.");
     }
 

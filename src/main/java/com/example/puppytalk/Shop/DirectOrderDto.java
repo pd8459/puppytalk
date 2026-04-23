@@ -1,13 +1,23 @@
 package com.example.puppytalk.Shop;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.List;
 
 @Getter
 @Setter
-@NoArgsConstructor
 public class DirectOrderDto {
-    private Long productId;
-    private int count;
+
+    private List<OrderItemDto> orderItems;
+
+    private String recipient;
+    private String phoneNumber;
+    private String address;
+
+    @Getter
+    @Setter
+    public static class OrderItemDto {
+        private Long optionId;
+        private int count;
+    }
 }

@@ -1,15 +1,16 @@
 package com.example.puppytalk.Shop;
 
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "cart_item")
-public class CartItem extends BaseTimeEntity {
+public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,31 +21,25 @@ public class CartItem extends BaseTimeEntity {
     private Cart cart;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
-    private Product product;
+    @JoinColumn(name = "product_option_id")
+    private ProductOption productOption;
 
     private int count;
 
-    @Builder
-    public CartItem(Cart cart, Product product, int count) {
-        this.cart = cart;
-        this.product = product;
-        this.count = count;
-    }
+    public static CartItem createCartItem(Cart cart, ProductOption productOption, int count) {
+        CartItem cartItem = new CartItem();
+        cartItem.setCart(cart);
+        cartItem.setProductOption(productOption);
+        cartItem.setCount(count);
 
-    public static CartItem createCartItem(Cart cart, Product product, int count) {
-        return CartItem.builder()
-                .cart(cart)
-                .product(product)
-                .count(count)
-                .build();
+        if (cart.getItems() != null) {
+            cart.getItems().add(cartItem);
+        }
+
+        return cartItem;
     }
 
     public void addCount(int count) {
         this.count += count;
-    }
-
-    public void updateCount(int count) {
-        this.count = count;
     }
 }
