@@ -15,7 +15,7 @@ import org.springframework.http.HttpHeaders;
 
 @Service
 public class AIService {
-    private final String AI_SERVER_URL = "http://127.0.0.1:8000";
+    private final String AI_SERVER_URL = "https://pdpd8459-puppytalk-ai.hf.space";
 
     public String classifyDogBreed(MultipartFile imageFile) throws IOException {
         RestTemplate restTemplate = new RestTemplate();
@@ -34,8 +34,8 @@ public class AIService {
 
         ResponseEntity<DogBreedResponseDto> response = restTemplate.postForEntity(
                 AI_SERVER_URL + "/predict/dog-breed",
-                    requestEntity,
-                    DogBreedResponseDto.class
+                requestEntity,
+                DogBreedResponseDto.class
         );
         return response.getBody().getPredicted_breed();
     }
@@ -45,8 +45,8 @@ public class AIService {
         ChatRequestDto requestDto = new ChatRequestDto(question);
         ResponseEntity<ChatResponseDto> response = restTemplate.postForEntity(
                 AI_SERVER_URL + "/chat",
-                    requestDto,
-                    ChatResponseDto.class
+                requestDto,
+                ChatResponseDto.class
         );
         return response.getBody().getAnswer();
     }
