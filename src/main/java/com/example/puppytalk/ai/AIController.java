@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
-import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -12,8 +11,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/api/ai")
 @RequiredArgsConstructor
 public class AIController {
 
@@ -22,16 +23,14 @@ public class AIController {
     @Value("${ai.server.url}")
     private String aiServerUrl;
 
-    @PostMapping("/api/ai/classify-dog")
-    @ResponseBody
-    public ResponseEntity<String> classifyDog(
-            @RequestParam("image") MultipartFile image) throws IOException {
+    @PostMapping("/classify-dog")
+    public ResponseEntity<String> classifyDog(@RequestParam("image") MultipartFile image) throws IOException {
+        String targetUrl = aiServerUrl + "/predict/dog-breed";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-
         ByteArrayResource resource = new ByteArrayResource(image.getBytes()) {
             @Override
             public String getFilename() {
@@ -41,6 +40,17 @@ public class AIController {
         body.add("file", resource);
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        return restTemplate.postForEntity(aiServerUrl, requestEntity, String.class);
+        return restTemplate.postForEntity(targetUrl, requestEntity, String.class);
+    }
+
+    @PostMapping("/chat")
+    public ResponseEntity<String> chat(@RequestBody Map<String, String> request) {
+        String targetUrl = aiServerUrl + "/chat";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(request, headers);
+        return restTemplate.postForEntity(targetUrl, entity, String.class);
     }
 }
