@@ -33,6 +33,16 @@
             font-weight: 800;
         }
 
+        .dropdown-item {
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: #FFF9F5;
+            color: #FF8A65;
+        }
+
         .btn-login-custom {
             border: 2px solid #FF8A65;
             color: #FF8A65;
@@ -42,6 +52,7 @@
             padding: 0.5rem 1.2rem;
             transition: all 0.2s;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .btn-login-custom:hover {
@@ -57,6 +68,7 @@
             font-weight: 700;
             padding: 0.6rem 1.2rem;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .btn-logout-custom:hover {
@@ -64,8 +76,8 @@
         }
 
         #notification-badge {
-            font-size: 0.7em;
-            transform: translate(-30%, -30%) !important;
+            font-size: 0.65em;
+            transform: translate(-10%, -30%) !important;
         }
     </style>
 
@@ -79,60 +91,61 @@
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/main}">메인</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/playgrounds}">반려견 놀이터</a>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">장소정보</a>
+                    <ul class="dropdown-menu border-0 shadow-sm">
+                        <li><a class="dropdown-item" th:href="@{/playgrounds}">반려견 놀이터</a></li>
+                        <li><a class="dropdown-item" th:href="@{/hospitals}">동물병원</a></li>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/hospitals}">동물병원</a>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">AI 서비스</a>
+                    <ul class="dropdown-menu border-0 shadow-sm">
+                        <li><a class="dropdown-item" th:href="@{/classifier}">AI 견종분석</a></li>
+                        <li><a class="dropdown-item" th:href="@{/chatbot}">AI 챗봇</a></li>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/classifier}">AI 견종분석</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/chatbot}">AI 챗봇</a>
-                </li>
+
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/shop/list}">쇼핑몰</a>
                 </li>
 
-                <li class="nav-item" id="admin-dashboard-nav-item" style="display: none;">
-                    <a class="nav-link admin-link" th:href="@{/admin}">대시보드</a>
-                </li>
-                <li class="nav-item" id="shop-register-nav-item" style="display: none;">
-                    <a class="nav-link admin-link" th:href="@{/shop/register}">상품등록</a>
-                </li>
-
-                <li class="nav-item" id="cart-nav-item" style="display: none;">
-                    <a class="nav-link" th:href="@{/shop/cart}">장바구니</a>
-                </li>
-                <li class="nav-item" id="order-history-nav-item" style="display: none;">
-                    <a class="nav-link" th:href="@{/shop/orders}">구매내역</a>
-                </li>
-
-                <li class="nav-item" id="mypage-nav-item" style="display: none;">
-                    <a class="nav-link" th:href="@{/mypage}">마이페이지</a>
-                </li>
-                <li class="nav-item" id="profile-nav-item" style="display: none;">
-                    <a class="nav-link" th:href="@{/profile-edit}">프로필</a>
-                </li>
-                <li class="nav-item" id="notifications-nav-item" style="display: none;">
-                    <a class="nav-link position-relative" th:href="@{/notifications}">
-                        알림
-                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-                            <span id="notification-count"></span>
-                        </span>
-                    </a>
-                </li>
-                <li class="nav-item" id="messages-nav-item" style="display: none;">
-                    <a class="nav-link" th:href="@{/messages}">메시지</a>
+                <li class="nav-item dropdown" id="admin-dropdown-nav" style="display: none;">
+                    <a class="nav-link dropdown-toggle admin-link" href="#" role="button" data-bs-toggle="dropdown">관리자</a>
+                    <ul class="dropdown-menu border-0 shadow-sm">
+                        <li><a class="dropdown-item admin-link" th:href="@{/admin}">대시보드</a></li>
+                        <li><a class="dropdown-item admin-link" th:href="@{/shop/register}">상품등록</a></li>
+                    </ul>
                 </li>
             </ul>
 
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center gap-3">
                 <div id="anonymous-nav" style="display: flex;">
                     <a class="btn-login-custom" href="/login">로그인</a>
                 </div>
-                <div id="authenticated-nav" style="display: none;">
+
+                <div id="authenticated-nav" style="display: none; align-items: center; gap: 10px;">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown">
+                            내 정보
+                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                                <span id="notification-count"></span>
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+                            <li><a class="dropdown-item" th:href="@{/mypage}">마이페이지</a></li>
+                            <li><a class="dropdown-item" th:href="@{/profile-edit}">프로필 관리</a></li>
+                            <li><a class="dropdown-item" th:href="@{/messages}">메시지</a></li>
+                            <li><a class="dropdown-item" th:href="@{/notifications}">알림 목록</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/shop/orders}">구매내역</a></li>
+                        </ul>
+                    </div>
+
+                    <a class="nav-link" th:href="@{/shop/cart}">장바구니</a>
+
                     <button class="btn-logout-custom" id="logout-btn">로그아웃</button>
                 </div>
             </div>
@@ -146,14 +159,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const anonymousNav = document.getElementById('anonymous-nav');
             const authenticatedNav = document.getElementById('authenticated-nav');
-            const mypageNavItem = document.getElementById('mypage-nav-item');
-            const profileNavItem = document.getElementById('profile-nav-item');
-            const notificationsNavItem = document.getElementById('notifications-nav-item');
-            const messagesNavItem = document.getElementById('messages-nav-item');
-            const cartNavItem = document.getElementById('cart-nav-item');
-            const orderHistoryNavItem = document.getElementById('order-history-nav-item');
-            const adminDashboardNavItem = document.getElementById('admin-dashboard-nav-item');
-            const shopRegisterNavItem = document.getElementById('shop-register-nav-item');
+            const adminDropdownNav = document.getElementById('admin-dropdown-nav');
 
             let stompClient = null;
 
@@ -161,17 +167,10 @@
                 .then(res => res.ok ? res.json() : Promise.reject('Not logged in'))
                 .then(user => {
                     anonymousNav.style.display = 'none';
-                    authenticatedNav.style.display = 'block';
-                    mypageNavItem.style.display = 'block';
-                    profileNavItem.style.display = 'block';
-                    notificationsNavItem.style.display = 'block';
-                    messagesNavItem.style.display = 'block';
-                    cartNavItem.style.display = 'block';
-                    orderHistoryNavItem.style.display = 'block';
+                    authenticatedNav.style.display = 'flex';
 
                     if (user.role === 'ADMIN') {
-                        adminDashboardNavItem.style.display = 'block';
-                        shopRegisterNavItem.style.display = 'block';
+                        adminDropdownNav.style.display = 'block';
                     }
 
                     updateNotificationBadge();
@@ -180,14 +179,7 @@
                 .catch(error => {
                     anonymousNav.style.display = 'block';
                     authenticatedNav.style.display = 'none';
-                    mypageNavItem.style.display = 'none';
-                    profileNavItem.style.display = 'none';
-                    notificationsNavItem.style.display = 'none';
-                    messagesNavItem.style.display = 'none';
-                    cartNavItem.style.display = 'none';
-                    orderHistoryNavItem.style.display = 'none';
-                    adminDashboardNavItem.style.display = 'none';
-                    shopRegisterNavItem.style.display = 'none';
+                    adminDropdownNav.style.display = 'none';
                 });
 
             const logoutButton = document.getElementById('logout-btn');

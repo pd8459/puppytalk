@@ -67,6 +67,8 @@
             margin-bottom: 1.5rem;
             display: flex;
             gap: 10px;
+            box-sizing: border-box;
+            width: 100%;
         }
 
         .search-box input {
@@ -77,6 +79,7 @@
             font-family: inherit;
             outline: none;
             transition: border-color 0.2s;
+            min-width: 0;
         }
 
         .search-box input:focus {
@@ -396,6 +399,28 @@
         const keyword = document.getElementById('search-keyword').value;
         fetchPosts(0, keyword, currentCategory);
     });
+
+    const writeBtn = document.querySelector('.btn-write');
+    if (writeBtn) {
+        writeBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch('/write-post', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('로그인이 필요한 서비스입니다! 🐾');
+                    window.location.href = '/login';
+                } else if (response.ok) {
+                    window.location.href = '/write-post';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    }
 </script>
 </body>
 </html>
