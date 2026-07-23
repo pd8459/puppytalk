@@ -10,8 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class    OrderConcurrencyTest {
+public class OrderConcurrencyTest {
 
     @Autowired
     private OrderService orderService;
@@ -29,32 +31,44 @@ public class    OrderConcurrencyTest {
     private ProductRepository productRepository;
 
     @Autowired
-    private ProductRepository orderRepository;
+    private ProductOptionRepository productOptionRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Autowired
     private UserRepository userRepository;
 
     private Long productId;
+    private Long optionId;
     private Long userId;
 
     @BeforeEach
     public void setUp() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
 
         Product product = new Product();
-        product.setName("테스트 타임딜 상품");
+        product.setName("테스트 타임딜 상품 " + suffix);
         product.setOriginalPrice(1000);
         product.setSalePrice(1000);
-        product.setStockQuantity(100);
+        product.setSaleStartTime(LocalDateTime.now().minusMinutes(1));
+        product.setSaleEndTime(LocalDateTime.now().plusMinutes(10));
         product.setDescription("테스트 설명");
         product.setStatus(com.example.puppytalk.Shop.ProductStatus.ON_SALE);
+        product.addOption(ProductOption.builder()
+                .name("기본 옵션")
+                .stockQuantity(100)
+                .extraPrice(0)
+                .build());
         productRepository.save(product);
         productId = product.getId();
+        optionId = product.getOptions().get(0).getId();
 
         User user = User.builder()
-                .username("testuser_concurrency")
+                .username("testuser_concurrency_" + suffix)
                 .password("password123")
-                .nickname("테스터")
-                .email("test@test.com")
+                .nickname("테스터_" + suffix)
+                .email("test_" + suffix + "@test.com")
                 .role(UserRole.USER)
                 .build();
 
@@ -64,9 +78,18 @@ public class    OrderConcurrencyTest {
 
     @AfterEach
     public void tearDown() {
-        orderRepository.deleteAll();
-        productRepository.deleteAll();
-        userRepository.deleteAll();
+        if (userId != null) {
+            userRepository.findById(userId).ifPresent(user -> {
+                List<Order> orders = orderRepository.findAllByUserOrderByOrderDateDesc(user);
+                orderRepository.deleteAll(orders);
+            });
+        }
+        if (productId != null) {
+            productRepository.deleteById(productId);
+        }
+        if (userId != null) {
+            userRepository.deleteById(userId);
+        }
     }
 
     @Test
@@ -84,7 +107,7 @@ public class    OrderConcurrencyTest {
                 try {
                     User user = userRepository.findById(userId).orElseThrow();
 
-                    orderService.directOrder(user, productId, 1);
+                    orderService.directOrder(user, createDirectOrderRequest());
 
                     successCount.getAndIncrement();
                 } catch (Exception e) {
@@ -97,15 +120,26 @@ public class    OrderConcurrencyTest {
         }
 
         latch.await();
+        executorService.shutdown();
 
-        Product product = productRepository.findById(productId).orElseThrow();
+        ProductOption option = productOptionRepository.findById(optionId).orElseThrow();
 
         System.out.println("=========================================");
         System.out.println("성공한 주문 수: " + successCount.get());
         System.out.println("실패한 주문 수: " + failCount.get());
-        System.out.println("남은 재고: " + product.getStockQuantity());
+        System.out.println("남은 재고: " + option.getStockQuantity());
         System.out.println("=========================================");
 
-        assertThat(product.getStockQuantity()).isEqualTo(0);
+        assertThat(option.getStockQuantity()).isEqualTo(0);
+        assertThat(successCount.get()).isEqualTo(threadCount);
+    }
+
+    private DirectOrderDto createDirectOrderRequest() {
+        DirectOrderDto request = new DirectOrderDto();
+        DirectOrderDto.OrderItemDto item = new DirectOrderDto.OrderItemDto();
+        item.setOptionId(optionId);
+        item.setCount(1);
+        request.setOrderItems(List.of(item));
+        return request;
     }
 }

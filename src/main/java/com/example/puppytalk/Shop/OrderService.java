@@ -1,6 +1,7 @@
 package com.example.puppytalk.Shop;
 
 import com.example.puppytalk.User.User;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class OrderService {
     private final PaymentService paymentService;
     private final ProductRepository productRepository;
     private final ProductOptionRepository productOptionRepository;
+    private final EntityManager entityManager;
 
     public Long orderFromCart(User user) {
         Cart cart = cartRepository.findByUserId(user.getId())
@@ -42,11 +44,12 @@ public class OrderService {
 
             Product product = option.getProduct();
             boolean isTimeDeal = product.getSaleStartTime() != null;
-            int finalPrice = product.getCurrentPrice() + option.getExtraPrice();
 
             if (isTimeDeal) {
+                entityManager.detach(option);
                 ProductOption lockedOption = productOptionRepository.findByIdWithLock(optionId)
                         .orElseThrow(() -> new IllegalArgumentException("옵션을 찾을 수 없습니다."));
+                int finalPrice = lockedOption.getProduct().getCurrentPrice() + lockedOption.getExtraPrice();
 
                 if (lockedOption.getStockQuantity() < count) {
                     throw new IllegalArgumentException("재고가 부족합니다.");
@@ -54,6 +57,7 @@ public class OrderService {
 
                 orderItems.add(OrderItem.createOrderItem(lockedOption, finalPrice, count));
             } else {
+                int finalPrice = product.getCurrentPrice() + option.getExtraPrice();
                 int updatedCount = productOptionRepository.decreaseStock(optionId, count);
                 if (updatedCount == 0) {
                     throw new IllegalArgumentException("재고가 부족합니다.");
@@ -168,11 +172,12 @@ public class OrderService {
 
             Product product = option.getProduct();
             boolean isTimeDeal = product.getSaleStartTime() != null;
-            int finalPrice = product.getCurrentPrice() + option.getExtraPrice();
 
             if (isTimeDeal) {
+                entityManager.detach(option);
                 ProductOption lockedOption = productOptionRepository.findByIdWithLock(optionId)
                         .orElseThrow(() -> new IllegalArgumentException("옵션을 찾을 수 없습니다."));
+                int finalPrice = lockedOption.getProduct().getCurrentPrice() + lockedOption.getExtraPrice();
 
                 if (lockedOption.getStockQuantity() < count) {
                     throw new IllegalArgumentException("재고가 부족합니다.");
@@ -180,6 +185,7 @@ public class OrderService {
 
                 orderItems.add(OrderItem.createOrderItem(lockedOption, finalPrice, count));
             } else {
+                int finalPrice = product.getCurrentPrice() + option.getExtraPrice();
                 int updatedCount = productOptionRepository.decreaseStock(optionId, count);
                 if (updatedCount == 0) {
                     throw new IllegalArgumentException("재고가 부족합니다.");

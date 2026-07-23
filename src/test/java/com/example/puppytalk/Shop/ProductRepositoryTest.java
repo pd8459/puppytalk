@@ -35,7 +35,6 @@ class ProductRepositoryTest {
         for (int i = 1; i <= 100; i++) {
             Product product = Product.builder()
                     .name("테스트 상품 " + i)
-                    .stockQuantity(10)
                     .build();
 
             product.setCategory(categories.get(i % 50));
