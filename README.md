@@ -50,7 +50,7 @@
 
 ### 2️⃣ 커머스 기능 및 동시성 제어 (E-Commerce)
 * **결제 검증 (Payment Validation):** 프론트엔드에서의 결제 조작을 방지하기 위해, PortOne API를 통해 서버단에서 실제 결제 금액과 주문 금액을 대조하는 **2차 검증 로직**을 구현했습니다.
-* **재고 관리 (Concurrency Control):** 주문이 몰릴 때 재고가 음수가 되는 **Race Condition(경쟁 상태)**을 방지하기 위해 JPA **`@Version` 기반의 낙관적 락(Optimistic Lock)**을 적용했습니다.
+* **재고 관리 (Concurrency Control):** 주문이 몰릴 때 재고가 음수가 되는 **Race Condition(경쟁 상태)**을 방지하기 위해 일반 상품은 @Modifying 조건부 UPDATE 쿼리(WHERE stock >= :count)로 재고 차감의 원자성을 DB 레벨에서 보장했습니다. 트래픽이 집중되는 타임딜 상품은 PESSIMISTIC_WRITE 락으로 별도 처리하여 Race Condition을 방지했습니다.
 * **N+1 문제 해결:** 장바구니 조회 시 상품 정보 조회를 위해 발생하는 다량의 쿼리를 `JOIN FETCH`로 최적화했습니다.
 
 ### 3️⃣ AI 모델 서빙 (AI Integration)
