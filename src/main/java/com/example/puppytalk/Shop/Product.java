@@ -5,10 +5,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -83,16 +84,21 @@ public class Product extends BaseTimeEntity {
     }
 
     public int getCurrentPrice() {
-        LocalDateTime now = LocalDateTime.now();
-        if (this.saleStartTime != null && this.saleEndTime != null) {
-            if (now.isAfter(this.saleStartTime) && now.isBefore(this.saleEndTime)) {
-                return this.salePrice;
-            }
+        if (isTimeDealActive()) {
+            return this.salePrice;
         }
-        else if (this.discountRate > 0) {
+        if (this.saleStartTime == null && this.discountRate > 0) {
             return this.salePrice;
         }
         return this.originalPrice;
+    }
+
+    private boolean isTimeDealActive() {
+        if (this.saleStartTime == null || this.saleEndTime == null) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return now.isAfter(this.saleStartTime) && now.isBefore(this.saleEndTime);
     }
 
     public void setCategory(Category category) {
@@ -102,6 +108,37 @@ public class Product extends BaseTimeEntity {
     public void addOption(ProductOption option) {
         this.options.add(option);
         option.setProduct(this);
+    }
+
+    public record OptionCommand(Long optionId, String name, int extraPrice, int stockQuantity) {}
+
+    public void syncOptions(List<OptionCommand> commands) {
+        Map<Long, ProductOption> existingById = this.options.stream()
+                .filter(o -> o.getId() != null)
+                .collect(Collectors.toMap(ProductOption::getId, o -> o));
+
+        List<ProductOption> updatedList = new ArrayList<>();
+
+        for (OptionCommand command : commands) {
+            ProductOption existing = command.optionId() != null ? existingById.get(command.optionId()) : null;
+
+            if (existing != null) {
+                existing.updateInfo(command.name(), command.extraPrice(), command.stockQuantity());
+                updatedList.add(existing);
+            } else {
+                ProductOption newOption = ProductOption.builder()
+                        .name(command.name())
+                        .extraPrice(command.extraPrice())
+                        .stockQuantity(command.stockQuantity())
+                        .build();
+                addOption(newOption);
+                updatedList.add(newOption);
+            }
+        }
+
+        this.options.clear();
+        this.options.addAll(updatedList);
+        checkAndAutoUpdateStatus();
     }
 
     public void checkAndAutoUpdateStatus() {
@@ -126,9 +163,20 @@ public class Product extends BaseTimeEntity {
     }
 
     public void updateDetailImages(List<String> imageUrls) {
-        this.detailImages.clear();
+        List<ProductDetailImage> toRemove = this.detailImages.stream()
+                .filter(img -> !imageUrls.contains(img.getImageUrl()))
+                .collect(Collectors.toList());
+        this.detailImages.removeAll(toRemove);
+
+        List<String> existingUrls = this.detailImages.stream()
+                .map(ProductDetailImage::getImageUrl)
+                .collect(Collectors.toList());
+
         for (int i = 0; i < imageUrls.size(); i++) {
-            addDetailImage(imageUrls.get(i), i + 1);
+            String url = imageUrls.get(i);
+            if (!existingUrls.contains(url)) {
+                addDetailImage(url, i + 1);
+            }
         }
     }
 }

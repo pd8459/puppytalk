@@ -29,7 +29,7 @@ public class PaymentService {
                 .orElseThrow(() -> new RuntimeException("주문이 존재하지 않습니다."));
 
         if (order.getStatus() == OrderStatus.PENDING) {
-            order.setStatus(OrderStatus.ORDER);
+            order.updateStatus(OrderStatus.ORDER);
         }
 
         Payment payment = Payment.builder()
@@ -61,10 +61,10 @@ public class PaymentService {
         Payment payment = paymentRepository.findByImpUidWithOrder(impUid)
                 .orElseThrow(() -> new RuntimeException("해당 결제 내역이 존재하지 않습니다."));
 
-        payment.setStatus("CANCEL");
+        payment.updateStatus("CANCEL");
 
         if (payment.getOrder() != null) {
-            payment.getOrder().setStatus(OrderStatus.CANCEL);
+            payment.getOrder().updateStatus(OrderStatus.CANCEL);
         }
     }
 }

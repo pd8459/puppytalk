@@ -4,7 +4,6 @@ import com.example.puppytalk.User.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,7 +12,6 @@ import java.util.List;
 @Entity
 @Table(name = "orders")
 @Getter
-@Setter
 @NoArgsConstructor
 public class Order extends BaseTimeEntity {
 
@@ -44,7 +42,7 @@ public class Order extends BaseTimeEntity {
         for (OrderItem orderItem : orderItems) {
             order.addOrderItem(orderItem);
         }
-        order.setStatus(OrderStatus.PENDING);
+        order.status = OrderStatus.PENDING;
         order.orderDate = LocalDateTime.now();
         return order;
     }

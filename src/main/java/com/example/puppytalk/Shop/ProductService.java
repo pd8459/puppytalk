@@ -24,12 +24,6 @@ public class ProductService {
 
         Product product = dto.toEntity(category);
 
-        int salePrice = dto.getOriginalPrice();
-        if (dto.getDiscountRate() > 0) {
-            salePrice = salePrice - (salePrice * dto.getDiscountRate() / 100);
-        }
-        product.setSalePrice(salePrice);
-
         if (dto.getDetailImageUrls() != null && !dto.getDetailImageUrls().isEmpty()) {
             product.updateDetailImages(dto.getDetailImageUrls());
         }
@@ -60,8 +54,23 @@ public class ProductService {
                 requestDto.getSaleEndTime()
         );
 
+        if (requestDto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(requestDto.getCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다. ID: " + requestDto.getCategoryId()));
+            product.setCategory(category);
+        }
+
         if (requestDto.getDetailImageUrls() != null) {
             product.updateDetailImages(requestDto.getDetailImageUrls());
+        }
+
+        if (requestDto.getOptions() != null && !requestDto.getOptions().isEmpty()) {
+            List<Product.OptionCommand> commands = requestDto.getOptions().stream()
+                    .map(opt -> new Product.OptionCommand(
+                            opt.getOptionId(), opt.getName(), opt.getExtraPrice(), opt.getStockQuantity()
+                    ))
+                    .collect(Collectors.toList());
+            product.syncOptions(commands);
         }
 
         productRepository.save(product);

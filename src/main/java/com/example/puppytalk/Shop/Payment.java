@@ -4,11 +4,9 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @NoArgsConstructor
 @Table(name = "payment")
 public class Payment extends BaseTimeEntity {
@@ -37,7 +35,7 @@ public class Payment extends BaseTimeEntity {
         this.status = status;
     }
 
-    public void setStatus(String status) {
+    public void updateStatus(String status) {
         this.status = status;
     }
 }

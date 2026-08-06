@@ -81,6 +81,8 @@ public class CommentController {
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         User currentUser = (userDetails != null) ? userDetails.getUser() : null;
-        return ResponseEntity.ok(commentService.getComments(postId, page, size, currentUser));
+        Page<CommentResponseDto> comments = commentService.getComments(postId, page, size);
+        commentService.attachLikedStatus(comments, currentUser);
+        return ResponseEntity.ok(comments);
     }
 }

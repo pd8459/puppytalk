@@ -5,7 +5,6 @@ import lombok.*;
 
 @Entity
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,6 +26,19 @@ public class ProductOption extends BaseTimeEntity {
 
     @Column(nullable = false)
     private int stockQuantity;
+
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public void updateInfo(String name, int extraPrice, int stockQuantity) {
+        this.name = name;
+        this.extraPrice = extraPrice;
+        this.stockQuantity = stockQuantity;
+        if (this.product != null) {
+            this.product.checkAndAutoUpdateStatus();
+        }
+    }
 
     public void removeStock(int quantity) {
         int restStock = this.stockQuantity - quantity;

@@ -15,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,27 +38,38 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf((csrf) -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement((sessionManagement) ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-
-        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         String[] PUBLIC_URLS = {
                 "/", "/login", "/signup", "/main", "/post-detail", "/playgrounds", "/hospitals",
-                "/public-profile/**", "/api/users/signup", "/api/users/login", "/api/logout",
+                "/public-profile/**", "/api/users/public-profile/**",
+                "/api/users/signup", "/api/users/login", "/api/logout",
                 "/api/ai/**", "/images/**", "/css/**", "/js/**",
                 "/classifier", "/chatbot", "/api/playgrounds/**", "/api/hospitals/**",
                 "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products",
-                "/api/user/**", "/v3/api-docs/**",
+                "/api/user/kakao/callback", "/api/user/google/callback", "/api/user/naver/callback",
+                "/v3/api-docs/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/api/products/**"
         };
+
+        http
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers(PUBLIC_URLS)
+                        .ignoringRequestMatchers("/api/user/kakao/callback",
+                                "/api/user/google/callback",
+                                "/api/user/naver/callback",
+                                "/ws-stomp/**")
+                )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(sessionManagement ->
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                );
+
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
@@ -65,7 +78,8 @@ public class SecurityConfig {
                 .requestMatchers("/messages", "/conversation", "/ws-stomp/**", "/error").permitAll()
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/**").hasAuthority("ADMIN")
                 .anyRequest().authenticated()
         );
 
@@ -84,17 +98,14 @@ public class SecurityConfig {
                 "http://localhost:8081",
                 "http://localhost:8082",
                 "http://localhost:8083",
-
                 "http://43.201.105.20",
-
                 "https://puppytalk.duckdns.org",
                 "http://puppytalk.duckdns.org"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-
-        config.setExposedHeaders(List.of("*", "Authorization"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

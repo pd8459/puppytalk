@@ -45,4 +45,8 @@ public class CommentResponseDto {
     public void setChildren(List<CommentResponseDto> children) {
         this.children = children;
     }
+
+    public void setLiked(boolean liked) {
+        this.liked = liked;
+    }
 }

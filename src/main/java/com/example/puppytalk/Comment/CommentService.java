@@ -90,7 +90,7 @@ public class CommentService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "postComments", key = "#postId + ':' + #page")
-    public Page<CommentResponseDto> getComments(Long postId, int page, int size, User currentUser) {
+    public Page<CommentResponseDto> getComments(Long postId, int page, int size) {
         Post post = postRepository.findById(postId).orElseThrow();
         Pageable pageable = PageRequest.of(page, size);
 
@@ -104,33 +104,33 @@ public class CommentService {
         Map<Long, Long> commentLikeMap = commentLikeRepository.countLikesByCommentIds(commentIds)
                 .stream()
                 .collect(Collectors.toMap(obj -> (Long) obj[0], obj -> (Long) obj[1]));
-        Set<Long> currentUserLikes = (currentUser != null)
-                ? commentLikeRepository.findLikedCommentIdsByUser(commentIds, currentUser)
-                : Collections.emptySet();
 
         List<CommentResponseDto> dtoList = commentPage.getContent().stream()
-                .map(comment -> {
-                    long likeCount = commentLikeMap.getOrDefault(comment.getId(), 0L);
-                    boolean isLiked = currentUserLikes.contains(comment.getId());
-                    return new CommentResponseDto(comment, likeCount, isLiked);
-                })
+                .map(comment -> new CommentResponseDto(
+                        comment,
+                        commentLikeMap.getOrDefault(comment.getId(), 0L),
+                        false
+                ))
                 .collect(Collectors.toList());
 
         return new RestPage<>(dtoList, pageable.getPageNumber(), pageable.getPageSize(), commentPage.getTotalElements());
     }
 
-    private CommentResponseDto convertToDto(Comment comment, Set<Long> likedCommentIds) {
-        CommentResponseDto dto = new CommentResponseDto(
-                comment,
-                (long) comment.getLikes().size(),
-                likedCommentIds.contains(comment.getId())
-        );
+    @Transactional(readOnly = true)
+    public void attachLikedStatus(Page<CommentResponseDto> commentPage, User currentUser) {
+        if (currentUser == null || commentPage.isEmpty()) {
+            return;
+        }
 
-        List<CommentResponseDto> childrenDtos = comment.getChildren().stream()
-                .map(child -> convertToDto(child, likedCommentIds))
+        List<Long> commentIds = commentPage.getContent().stream()
+                .map(CommentResponseDto::getId)
                 .collect(Collectors.toList());
-        dto.setChildren(childrenDtos);
 
-        return dto;
+        Set<Long> currentUserLikes = commentLikeRepository.findLikedCommentIdsByUser(commentIds, currentUser);
+
+        commentPage.getContent().forEach(dto ->
+                dto.setLiked(currentUserLikes.contains(dto.getId()))
+        );
     }
+
 }

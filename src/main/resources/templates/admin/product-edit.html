@@ -129,6 +129,21 @@
             object-fit: cover;
             display: none;
         }
+
+        .section-card {
+            background-color: var(--bg-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #FFE0B2;
+        }
+
+        .option-row, .detail-image-row {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.6rem;
+            background-color: white;
+        }
     </style>
 </head>
 <body>
@@ -144,6 +159,18 @@
         <form id="edit-form">
             <div class="row g-3">
                 <div class="col-md-12">
+                    <label class="form-label">카테고리</label>
+                    <select class="form-select" id="categoryId" required>
+                        <option value="1">사료/간식</option>
+                        <option value="2">외출/산책</option>
+                        <option value="3">목욕/미용</option>
+                        <option value="4">의류/패션</option>
+                        <option value="5">장난감</option>
+                        <option value="6">하우스</option>
+                    </select>
+                </div>
+
+                <div class="col-md-12">
                     <label class="form-label">상품명</label>
                     <input type="text" id="name" class="form-control" required>
                 </div>
@@ -157,15 +184,6 @@
                     <input type="number" id="discountRate" class="form-control" value="0" required>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">판매가 (원)</label>
-                    <input type="number" id="salePrice" class="form-control" required>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">재고 수량</label>
-                    <input type="number" id="stockQuantity" class="form-control" required>
-                </div>
-                <div class="col-md-6">
                     <label class="form-label">판매 상태</label>
                     <select id="status" class="form-select">
                         <option value="ON_SALE">판매중</option>
@@ -209,6 +227,30 @@
                         <img id="img-preview" class="img-preview">
                     </div>
                 </div>
+
+                <div class="col-md-12">
+                    <div class="section-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">상품 옵션</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-option-btn">
+                                <i class="fa-solid fa-plus"></i> 옵션 추가
+                            </button>
+                        </div>
+                        <div id="options-container" class="d-flex flex-column gap-2"></div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="section-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">상세 이미지 URL</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-detail-image-btn">
+                                <i class="fa-solid fa-plus"></i> 이미지 URL 추가
+                            </button>
+                        </div>
+                        <div id="detail-images-container" class="d-flex flex-column gap-2"></div>
+                    </div>
+                </div>
             </div>
 
             <button type="submit" class="btn-submit">수정 완료</button>
@@ -220,13 +262,62 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script th:inline="javascript">
     const productId = [[${productId}]];
-    const token = localStorage.getItem('Authorization');
+
+    function addOptionRow(option) {
+        const container = document.getElementById('options-container');
+        const row = document.createElement('div');
+        row.className = 'row g-2 option-row';
+        row.dataset.optionId = option && option.optionId ? option.optionId : '';
+        row.innerHTML = `
+            <div class="col-5">
+                <input type="text" class="form-control opt-name" placeholder="옵션명" value="${option ? option.name : ''}" required>
+            </div>
+            <div class="col-3">
+                <input type="number" class="form-control opt-price" placeholder="추가 금액" value="${option ? option.extraPrice : 0}" required>
+            </div>
+            <div class="col-3">
+                <input type="number" class="form-control opt-stock" placeholder="재고 수량" value="${option ? option.stockQuantity : 0}" required>
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn btn-outline-danger w-100 remove-option-btn"><i class="fa-solid fa-minus"></i></button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function addDetailImageRow(url) {
+        const container = document.getElementById('detail-images-container');
+        const row = document.createElement('div');
+        row.className = 'row g-2 detail-image-row';
+        row.innerHTML = `
+            <div class="col-11">
+                <input type="text" class="form-control detail-image-url" placeholder="http://..." value="${url || ''}">
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn btn-outline-danger w-100 remove-detail-image-btn"><i class="fa-solid fa-minus"></i></button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    document.getElementById('add-option-btn').addEventListener('click', () => addOptionRow(null));
+    document.getElementById('add-detail-image-btn').addEventListener('click', () => addDetailImageRow(''));
+
+    document.getElementById('options-container').addEventListener('click', (e) => {
+        if (e.target.closest('.remove-option-btn')) {
+            e.target.closest('.option-row').remove();
+        }
+    });
+
+    document.getElementById('detail-images-container').addEventListener('click', (e) => {
+        if (e.target.closest('.remove-detail-image-btn')) {
+            e.target.closest('.detail-image-row').remove();
+        }
+    });
 
     window.addEventListener('DOMContentLoaded', async () => {
         try {
-            const response = await fetch(`/api/shop/products/${productId}`, {
-                headers: { 'Authorization': token }
-            });
+            const response = await fetch(`/api/shop/products/${productId}`);
 
             if (!response.ok) throw new Error('데이터를 불러오지 못했습니다.');
             const product = await response.json();
@@ -234,8 +325,6 @@
             document.getElementById('name').value = product.name || '';
             document.getElementById('originalPrice').value = product.originalPrice || 0;
             document.getElementById('discountRate').value = product.discountRate || 0;
-            document.getElementById('salePrice').value = product.salePrice || 0;
-            document.getElementById('stockQuantity').value = product.stockQuantity || 0;
 
             if (product.status) document.getElementById('status').value = product.status;
 
@@ -247,6 +336,16 @@
 
             document.getElementById('description').value = product.description || '';
 
+            const categorySelect = document.getElementById('categoryId');
+            if (product.categoryName) {
+                for (const opt of categorySelect.options) {
+                    if (opt.textContent === product.categoryName) {
+                        opt.selected = true;
+                        break;
+                    }
+                }
+            }
+
             const thumbInput = document.getElementById('thumbnailUrl');
             const thumbPreview = document.getElementById('img-preview');
             thumbInput.value = product.thumbnailUrl || '';
@@ -256,13 +355,23 @@
             }
 
             thumbInput.addEventListener('input', (e) => {
-                if(e.target.value) {
+                if (e.target.value) {
                     thumbPreview.src = e.target.value;
                     thumbPreview.style.display = 'inline-block';
                 } else {
                     thumbPreview.style.display = 'none';
                 }
             });
+
+            if (product.options && product.options.length > 0) {
+                product.options.forEach(opt => addOptionRow(opt));
+            } else {
+                addOptionRow(null);
+            }
+
+            if (product.detailImageUrls && product.detailImageUrls.length > 0) {
+                product.detailImageUrls.forEach(url => addDetailImageRow(url));
+            }
 
         } catch (error) {
             alert(error.message);
@@ -275,33 +384,45 @@
 
         let start = document.getElementById('saleStartTime').value;
         let end = document.getElementById('saleEndTime').value;
-        if(start && start.length === 16) start += ':00';
-        if(end && end.length === 16) end += ':00';
+        if (start && start.length === 16) start += ':00';
+        if (end && end.length === 16) end += ':00';
 
         let rSize = document.getElementById('recommendedSize').value;
-        if(rSize === "") rSize = null;
+        if (rSize === "") rSize = null;
+
+        const optionRows = document.querySelectorAll('.option-row');
+        const options = Array.from(optionRows).map(row => ({
+            optionId: row.dataset.optionId ? parseInt(row.dataset.optionId) : null,
+            name: row.querySelector('.opt-name').value,
+            extraPrice: parseInt(row.querySelector('.opt-price').value) || 0,
+            stockQuantity: parseInt(row.querySelector('.opt-stock').value) || 0
+        }));
+
+        const detailImageRows = document.querySelectorAll('.detail-image-url');
+        const detailImageUrls = Array.from(detailImageRows)
+            .map(input => input.value.trim())
+            .filter(url => url.length > 0);
 
         const requestData = {
+            categoryId: parseInt(document.getElementById('categoryId').value),
             name: document.getElementById('name').value,
             originalPrice: parseInt(document.getElementById('originalPrice').value) || 0,
             discountRate: parseInt(document.getElementById('discountRate').value) || 0,
-            salePrice: parseInt(document.getElementById('salePrice').value) || 0,
-            stockQuantity: parseInt(document.getElementById('stockQuantity').value) || 0,
-            status: document.getElementById('status').value,
             targetBreed: document.getElementById('targetBreed').value,
             recommendedSize: rSize,
             saleStartTime: start || null,
             saleEndTime: end || null,
             description: document.getElementById('description').value,
-            thumbnailUrl: document.getElementById('thumbnailUrl').value
+            thumbnailUrl: document.getElementById('thumbnailUrl').value,
+            detailImageUrls: detailImageUrls,
+            options: options
         };
 
         try {
             const response = await fetch(`/api/shop/products/${productId}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(requestData)
             });

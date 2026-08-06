@@ -31,6 +31,9 @@ public class JwtUtil {
     public static final String BEARER_PREFIX = "Bearer ";
     private final long TOKEN_TIME = 60 * 60 * 1000L;
 
+    @Value("${jwt.cookie.secure}")
+    private boolean cookieSecure;
+
     @Value("${jwt.secret.key}")
     private String secretKey;
     private Key key;
@@ -66,8 +69,8 @@ public class JwtUtil {
                     .path("/")
                     .maxAge(60 * 60)
                     .httpOnly(true)
-                    .sameSite("Lax")
-                    .secure(false)
+                    .sameSite("Strict")
+                    .secure(cookieSecure)
                     .build();
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

@@ -34,6 +34,7 @@ public class ProductRequestDto {
     @Setter
     @NoArgsConstructor
     public static class OptionRequestDto {
+        private Long optionId;
         private String name;
         private int extraPrice;
         private int stockQuantity;

@@ -85,7 +85,7 @@ public class AdminService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문 없음"));
 
-        order.setStatus(OrderStatus.CANCEL);
+        order.updateStatus(OrderStatus.CANCEL);
 
         for (OrderItem item : order.getOrderItems()) {
             ProductOption option = item.getProductOption();
