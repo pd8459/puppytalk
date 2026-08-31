@@ -429,15 +429,27 @@
     let currentPage = 0;
     const pageSize = 5;
 
-    const getCookieToken = () => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; Authorization=`);
-        if (parts.length === 2) {
-            return decodeURIComponent(parts.pop().split(';').shift());
-        }
-        return null;
+    const getCookieValue = (name) => {
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : null;
     };
-    const token = getCookieToken();
+
+    const getRequestHeaders = (json = false) => {
+        const headers = {};
+        const csrfToken = getCookieValue('XSRF-TOKEN');
+        const legacyToken = localStorage.getItem('Authorization');
+
+        if (json) headers['Content-Type'] = 'application/json';
+        if (csrfToken) headers['X-XSRF-TOKEN'] = csrfToken;
+        if (legacyToken) headers['Authorization'] = legacyToken;
+
+        return headers;
+    };
+
+    async function ensureCsrfToken() {
+        if (getCookieValue('XSRF-TOKEN')) return;
+        await fetch('/api/profile', { credentials: 'same-origin' }).catch(() => {});
+    }
 
     window.addEventListener('DOMContentLoaded', async () => {
         loadReviews();
@@ -573,9 +585,11 @@
 
             document.getElementById('chat-btn').onclick = async () => {
                 try {
+                    await ensureCsrfToken();
                     const response = await fetch(`/api/messages/inquiry/${sellerUsername}`, {
                         method: 'POST',
-                        headers: { 'Authorization': token }
+                        credentials: 'same-origin',
+                        headers: getRequestHeaders()
                     });
                     if (response.ok) {
                         const conversationId = await response.json();
@@ -669,15 +683,25 @@
         document.getElementById('total-price-bottom').textContent = totalPrice.toLocaleString() + '원';
     }
 
-    window.executeBuyNow = function() {
+    window.executeBuyNow = async function() {
         if (selectedOptionsList.length === 0) {
             alert('구매하실 옵션을 선택해 주세요.');
             return;
         }
         if (confirm('선택하신 상품들을 바로 구매하시겠습니까?')) {
+            await ensureCsrfToken();
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/shop/checkout/direct';
+
+            const csrfToken = getCookieValue('XSRF-TOKEN');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_csrf';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+            }
 
             selectedOptionsList.forEach(opt => {
                 const idInput = document.createElement('input');
@@ -704,18 +728,17 @@
             return;
         }
         try {
+            await ensureCsrfToken();
             for (const opt of selectedOptionsList) {
                 const response = await fetch('/api/shop/cart', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': token
-                    },
+                    credentials: 'same-origin',
+                    headers: getRequestHeaders(true),
                     body: JSON.stringify({ optionId: opt.optionId || opt.id, count: opt.qty })
                 });
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
-                        alert('로그인이 필요합니다.');
+                        alert('장바구니 담기에 실패했습니다. 상태 코드: ' + response.status + '\n' + await response.text());
                         location.href = '/login';
                         return;
                     }

@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -48,21 +49,28 @@ public class SecurityConfig {
                 "/ws-stomp/**", "/shop/list", "/shop/detail", "/api/shop/products/**", "/api/shop/products",
                 "/api/user/kakao/callback", "/api/user/google/callback", "/api/user/naver/callback",
                 "/v3/api-docs/**",
-                "/v3/api-docs/**",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/api/products/**"
         };
 
+        String[] CSRF_IGNORE_URLS = {
+                "/api/users/signup", "/api/users/login",
+                "/api/ai/**", "/api/playgrounds/**", "/api/hospitals/**",
+                "/api/user/kakao/callback", "/api/user/google/callback", "/api/user/naver/callback",
+                "/api/shop/payment/verify",
+                "/ws-stomp/**",
+                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+        };
+
+        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.sameSite("Strict"));
+
         http
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers(PUBLIC_URLS)
-                        .ignoringRequestMatchers("/api/user/kakao/callback",
-                                "/api/user/google/callback",
-                                "/api/user/naver/callback",
-                                "/ws-stomp/**")
+                        .ignoringRequestMatchers(CSRF_IGNORE_URLS)
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sessionManagement ->
@@ -78,10 +86,12 @@ public class SecurityConfig {
                 .requestMatchers("/messages", "/conversation", "/ws-stomp/**", "/error").permitAll()
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
                 .anyRequest().authenticated()
         );
+
+        http.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class);
 
         http.addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class);

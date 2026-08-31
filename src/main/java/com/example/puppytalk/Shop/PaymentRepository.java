@@ -8,6 +8,10 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
+    Optional<Payment> findByImpUid(String impUid);
+
+    Optional<Payment> findByMerchantUid(String merchantUid);
+
     @Query("SELECT p FROM Payment p JOIN FETCH p.order WHERE p.impUid = :impUid")
     Optional<Payment> findByImpUidWithOrder(@Param("impUid") String impUid);
 

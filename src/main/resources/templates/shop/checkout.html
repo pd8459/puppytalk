@@ -127,15 +127,27 @@
         }).open();
     }
 
-    // 쿠키에서 JWT 토큰 가져오는 함수
-    const getCookieToken = () => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; Authorization=`);
-        if (parts.length === 2) {
-            return decodeURIComponent(parts.pop().split(';').shift());
-        }
-        return null;
+    const getCookieValue = (name) => {
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : null;
     };
+
+    const getRequestHeaders = (json = false) => {
+        const headers = {};
+        const csrfToken = getCookieValue('XSRF-TOKEN');
+        const legacyToken = localStorage.getItem('Authorization');
+
+        if (json) headers['Content-Type'] = 'application/json';
+        if (csrfToken) headers['X-XSRF-TOKEN'] = csrfToken;
+        if (legacyToken) headers['Authorization'] = legacyToken;
+
+        return headers;
+    };
+
+    async function ensureCsrfToken() {
+        if (getCookieValue('XSRF-TOKEN')) return;
+        await fetch('/api/profile', { credentials: 'same-origin' }).catch(() => {});
+    }
 
     async function requestPayment() {
         const recipient = document.getElementById('recipient').value;
@@ -149,8 +161,7 @@
         }
         if (!confirm("카카오페이로 결제를 진행하시겠습니까?")) return;
 
-        // localStorage 대신 getCookieToken() 사용 (상세페이지와 통일)
-        const token = getCookieToken() || localStorage.getItem('Authorization');
+        await ensureCsrfToken();
         const apiUrl = isDirectOrder ? '/api/shop/order/direct' : '/api/shop/order';
 
         let orderItemsArray = [];
@@ -177,36 +188,48 @@
         try {
             const orderResponse = await fetch(apiUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
-                },
+                credentials: 'same-origin',
+                headers: getRequestHeaders(true),
                 body: JSON.stringify(bodyData)
             });
             if (!orderResponse.ok) {
-                alert("주문 생성에 실패했습니다.");
+                alert("주문 생성에 실패했습니다. 상태 코드: " + orderResponse.status + "\n" + await orderResponse.text());
                 return;
             }
             const orderData = await orderResponse.json();
             const merchantUid = "ORD-" + orderData.orderId + "-" + new Date().getTime();
+            const paymentAmount = orderData.totalPrice;
+            const paymentOrderName = orderData.orderName || orderName;
+            const paymentBuyerName = orderData.buyerName || buyerName;
 
             IMP.request_pay({
                 pg: "kakaopay",
                 pay_method: "card",
                 merchant_uid: merchantUid,
-                name: orderName,
-                amount: totalPrice,
+                name: paymentOrderName,
+                amount: paymentAmount,
                 buyer_email: buyerEmail,
-                buyer_name: buyerName,
+                buyer_name: paymentBuyerName,
                 buyer_tel: phone,
                 buyer_addr: address + " " + detailAddress,
                 buyer_postcode: document.getElementById('zipcode').value
             }, async function (rsp) {
+                console.log('PortOne payment response:', rsp);
                 if (rsp.success) {
+                    if (!rsp.imp_uid || !rsp.merchant_uid) {
+                        await fetch(`/api/shop/order/${orderData.orderId}/cancel`, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: getRequestHeaders()
+                        });
+                        alert("결제 응답에 결제 고유번호가 없습니다. PortOne 설정을 확인해주세요.");
+                        return;
+                    }
                     try {
                         const verifyResponse = await fetch('/api/shop/payment/verify', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                            credentials: 'same-origin',
+                            headers: getRequestHeaders(true),
                             body: JSON.stringify({
                                 imp_uid: rsp.imp_uid, merchant_uid: rsp.merchant_uid,
                                 paid_amount: rsp.paid_amount, pay_method: rsp.pay_method, status: rsp.status
@@ -222,6 +245,11 @@
                         alert("결제 검증 중 서버 오류가 발생했습니다.");
                     }
                 } else {
+                    await fetch(`/api/shop/order/${orderData.orderId}/cancel`, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: getRequestHeaders()
+                    });
                     alert("결제에 실패하였습니다.\n" + rsp.error_msg);
                 }
             });

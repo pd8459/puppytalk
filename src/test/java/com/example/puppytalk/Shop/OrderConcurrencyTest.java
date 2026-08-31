@@ -47,14 +47,15 @@ public class OrderConcurrencyTest {
     public void setUp() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
 
-        Product product = new Product();
-        product.setName("테스트 타임딜 상품 " + suffix);
-        product.setOriginalPrice(1000);
-        product.setSalePrice(1000);
-        product.setSaleStartTime(LocalDateTime.now().minusMinutes(1));
-        product.setSaleEndTime(LocalDateTime.now().plusMinutes(10));
-        product.setDescription("테스트 설명");
-        product.setStatus(com.example.puppytalk.Shop.ProductStatus.ON_SALE);
+        Product product = Product.builder()
+                .name("테스트 타임딜 상품 " + suffix)
+                .originalPrice(1000)
+                .salePrice(1000)
+                .saleStartTime(LocalDateTime.now().minusMinutes(1))
+                .saleEndTime(LocalDateTime.now().plusMinutes(10))
+                .description("테스트 설명")
+                .status(ProductStatus.ON_SALE)
+                .build();
         product.addOption(ProductOption.builder()
                 .name("기본 옵션")
                 .stockQuantity(100)
